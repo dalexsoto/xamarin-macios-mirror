@@ -256,6 +256,7 @@ xamarin_main (int argc, char *argv[], bool is_extension)
 
 #if TARGET_OS_WATCH || TARGET_OS_TV
 	mini_parse_debug_option ("explicit-null-checks");
+	signal (SIGPIPE, SIG_IGN);
 #endif
 	// see http://bugzilla.xamarin.com/show_bug.cgi?id=820
 	// take this line out once the bug is fixed
