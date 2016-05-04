@@ -215,9 +215,6 @@ IOS_EXTRA_SYSTEM_NET_HTTP_FILES = \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/CFContentStream.cs)  \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/CFNetworkHandler.cs) \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/HttpClientEx.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/ProgressStreamContent.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/iOS/AsyncLock.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/iOS/NSUrlSessionHandler.cs) \
 	$(abspath $(TOP)/src/ObjCRuntime/RuntimeOptions.cs) \
 
 # build (into custom LIBRARY_SUBDIR)
@@ -411,9 +408,6 @@ MAC_CFNETWORK_SOURCES = \
 
 MAC_MODERNHTTP_SOURCES = \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/HttpClientEx.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/ProgressStreamContent.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/iOS/AsyncLock.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/iOS/NSUrlSessionHandler.cs) \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/CFContentStream.cs)  \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/CFNetworkHandler.cs) \
 
@@ -732,13 +726,10 @@ $(WATCH_BUILD_DIR)/reference/MonoTouch.NUnitLite.dll.mdb: $(WATCH_BUILD_DIR)/ref
 
 WATCH_EXTRA_SYSTEM_NET_HTTP_FILES = \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/HttpClientEx.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/ProgressStreamContent.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/iOS/AsyncLock.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/iOS/NSUrlSessionHandler.cs) \
 	$(abspath $(TOP)/src/ObjCRuntime/RuntimeOptions.cs) \
 
 # There are no extra source code for System.Net.Http.dll yet,
-# since there's no CFNetwork on WatchOS. Eventually ModernHttpClient
+# since there's no CFNetwork on WatchOS. Eventually NSUrlSessionHandler
 # code will be included here.
 
 # build (into custom LIBRARY_SUBDIR)
@@ -943,13 +934,10 @@ TVOS_EXTRA_SYSTEM_NET_HTTP_FILES = \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/CFContentStream.cs)  \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/CFNetworkHandler.cs) \
 	$(abspath $(MONO_PATH)/mcs/class/System.Net.Http/HttpClientEx.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/ProgressStreamContent.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/iOS/AsyncLock.cs) \
-	$(abspath $(MODERNHTTPCLIENT_PATH)/src/ModernHttpClient/iOS/NSUrlSessionHandler.cs) \
 	$(abspath $(TOP)/src/ObjCRuntime/RuntimeOptions.cs) \
 
 # There are no extra source code for System.Net.Http.dll yet,
-# since there's no CFNetwork on TVOS. Eventually ModernHttpClient
+# since there's no CFNetwork on TVOS. Eventually NSUrlSessionHandler
 # code will be included here.
 
 # build (into custom LIBRARY_SUBDIR)
