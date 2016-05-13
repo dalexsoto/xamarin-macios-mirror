@@ -963,7 +963,7 @@ WATCHSIMULATOR_CONFIGURE_FLAGS =                \
 
 # FIXME: remove --with-checked-build=yes when we've stabilized a bit.
 WATCHSIMULATOR_CONFIGURE_FLAGS += \
-	--with-checked-build=yes                    \
+	--enable-checked-build=gc                    \
 	
 WATCHSIMULATOR_ACVARS =  \
 	ac_cv_func_system=no \
