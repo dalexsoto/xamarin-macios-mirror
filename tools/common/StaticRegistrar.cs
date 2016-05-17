@@ -3492,7 +3492,7 @@ namespace XamCore.Registrar {
 				sb.WriteLine ("}");
 				sb.WriteLine ();
 			} else {
-				Console.WriteLine ("Signature already processed: {0} for {1}.{2}", signature.ToString (), method.DeclaringType.FullName, method.Name);
+				// Console.WriteLine ("Signature already processed: {0} for {1}.{2}", signature.ToString (), method.DeclaringType.FullName, method.Name);
 			}
 
 			// find the module reference to __Internal
