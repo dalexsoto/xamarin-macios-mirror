@@ -1348,8 +1348,10 @@ ARM_ARCH_CONFIGURE_FLAGS=--host=arm-apple-darwin10 --disable-boehm
 ARM64_ARCH_CONFIGURE_FLAGS=--host=aarch64-apple-darwin10 --disable-boehm
 
 ifdef INCLUDE_IOS
+ifdef INCLUDE_DEVICE
 ifndef DEVICE_RUNTIMES
 DEVICE_RUNTIMES="armv7 armv7s arm64 "
+endif
 endif
 endif
 
@@ -1366,6 +1368,7 @@ ifneq ($(findstring arm64 , $(DEVICE_RUNTIMES) ),)
 $(eval $(call PlatformBuildTemplate,arm64,target64,,$(ARM64_ARCH_CONFIGURE_FLAGS),,7.0))
 endif
 
+ifdef INCLUDE_DEVICE
 iphoneos:: setup-iphoneos build-iphoneos install-iphoneos
 device:: iphoneos
 clean-device: clean-iphoneos
@@ -1373,6 +1376,7 @@ clean-device: clean-iphoneos
 # this needs to be here because the normal usage of this makefile is "make all install", but nothing actually lists the -iphoneos targets as dependencies.
 ifdef INCLUDE_IOS
 install-local:: install-iphoneos
+endif
 endif
 
 IPHONEOS_TARGETS = \
@@ -1503,6 +1507,7 @@ WATCHOS_ENVIRONMENT =                     \
 	DEVELOPER_DIR=$(XCODE_DEVELOPER_ROOT) \
 
 ifdef INCLUDE_WATCH
+ifdef INCLUDE_DEVICE
 setup:: setup-targetwatch
 build:: build-targetwatch
 clean-local:: clean-targetwatch
@@ -1512,6 +1517,7 @@ targetwatch: build-targetwatch install-watchos
 watchos:: targetwatch
 
 .PHONY: targetwatch
+endif
 endif
 
 setup-targetwatch: .stamp-configure-targetwatch
@@ -1679,6 +1685,7 @@ TVOS_ENVIRONMENT =                        \
 	DEVELOPER_DIR=$(XCODE_DEVELOPER_ROOT) \
 
 ifdef INCLUDE_TVOS
+ifdef INCLUDE_DEVICE
 setup:: setup-targettv
 build:: build-targettv
 clean-local:: clean-targettv
@@ -1688,6 +1695,7 @@ targettv: build-targettv install-tvos
 tvos:: targettv
 
 .PHONY: targettv
+endif
 endif
 
 setup-targettv: .stamp-configure-targettv
@@ -1766,6 +1774,7 @@ install-tvos: $(TVOS_TARGETS)
 #
 # we need to compile the cross build against llvm so we need to configure/build that first
 #
+ifdef INCLUDE_DEVICE
 cross:: build-llvm
 cross64:: build-llvm64
 
@@ -1774,6 +1783,7 @@ clean-local:: clean-llvm clean-llvm64
 
 setup-llvm: .stamp-configure-llvm
 setup-llvm64: .stamp-configure-llvm64
+endif
 
 LLVM_BASE_CONFIGURE_FLAGS=--enable-libcpp --enable-optimized --enable-assertions=no --disable-jit --disable-docs --disable-doxygen
 LLVM_CXXFLAGS=$(CCACHE_CXXFLAGS)
@@ -1904,6 +1914,7 @@ CROSS_CONFIGURE_ENVIRONMENT = \
 	CXX="$(MAC_CXX)" \
 
 ifdef INCLUDE_IOS
+ifdef INCLUDE_DEVICE
 cross:: build-cross install-cross
 
 .PHONY: setup-cross build-cross install-cross
@@ -1912,6 +1923,7 @@ setup:: setup-cross
 build:: build-cross
 install-local:: install-cross
 clean-local:: clean-cross
+endif
 endif
 
 setup-cross: .stamp-configure-cross
@@ -1965,10 +1977,12 @@ CROSS64_CONFIGURE_ENVIRONMENT = \
 cross64:: build-cross64 install-cross64
 
 ifdef INCLUDE_IOS
+ifdef INCLUDE_DEVICE
 setup:: setup-cross64
 build:: build-cross64
 install-local:: install-cross64
 clean-local:: clean-cross64
+endif
 endif
 
 setup-cross64: .stamp-configure-cross64
@@ -2028,6 +2042,7 @@ WATCH_CONFIGURE_ENVIRONMENT = \
 	CXX="$(MAC_CXX)" \
 
 ifdef INCLUDE_WATCH
+ifdef INCLUDE_DEVICE
 cross:: build-cross-watch install-cross-watch
 
 .PHONY: setup-cross-watch build-cross-watch install-cross-watch
@@ -2036,6 +2051,7 @@ setup:: setup-cross-watch
 build:: build-cross-watch
 install-local:: install-cross-watch
 clean-local:: clean-cross-watch
+endif
 endif
 
 .PHONY: cross-watch
@@ -2091,6 +2107,7 @@ TV_CROSS_CONFIGURE_ENVIRONMENT = \
 
 
 ifdef INCLUDE_TVOS
+ifdef INCLUDE_DEVICE
 cross:: build-crosstv install-crosstv
 
 .PHONY: setup-crosstv build-crosstv install-crosstv
@@ -2099,6 +2116,7 @@ setup:: setup-crosstv
 build:: build-crosstv
 install-local:: install-crosstv
 clean-local:: clean-crosstv
+endif
 endif
 
 setup-crosstv: .stamp-configure-crosstv
