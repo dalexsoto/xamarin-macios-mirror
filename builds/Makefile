@@ -1912,7 +1912,7 @@ CROSS_CONFIGURE_FLAGS=$(CROSS_BASE_CONFIGURE_FLAGS)	\
 	--cache-file=../cross.config.cache \
 	--target=arm-darwin \
 	--with-cross-offsets=arm-apple-darwin10.h \
-	--with-llvm=$(PWD)/llvm/usr
+	--with-llvm=$$PWD/llvm/usr
 
 CROSS_CONFIGURE_ENVIRONMENT = \
 	CFLAGS="$(CROSS_CFLAGS)" \
@@ -1973,7 +1973,7 @@ CROSS64_CONFIGURE_FLAGS=$(CROSS_BASE_CONFIGURE_FLAGS)	\
 	--cache-file=../cross64.config.cache \
 	--target=aarch64-darwin \
 	--with-cross-offsets=aarch64-apple-darwin10.h \
-	--with-llvm=$(PWD)/llvm64/usr
+	--with-llvm=$$PWD/llvm64/usr
 
 CROSS64_CONFIGURE_ENVIRONMENT = \
 	CFLAGS="$(CROSS64_CFLAGS)" \
@@ -2039,7 +2039,7 @@ WATCH_CROSS_CONFIGURE_FLAGS=$(CROSS_BASE_CONFIGURE_FLAGS)	\
 	--target=armv7k-unknown-darwin \
 	--with-cooperative-gc=yes \
 	--with-cross-offsets=armv7k-apple-darwin.h \
-	--with-llvm=$(PWD)/llvm/usr
+	--with-llvm=$$PWD/llvm/usr
 
 WATCH_CONFIGURE_ENVIRONMENT = \
 	CFLAGS="$(CROSS_CFLAGS)" \
@@ -2102,7 +2102,7 @@ TV_CROSS_CONFIGURE_FLAGS=$(CROSS_BASE_CONFIGURE_FLAGS)	\
 	--prefix=$(BUILD_DESTDIR)/crosstv \
 	--cache-file=../crosstv.config.cache \
 	--target=aarch64-unknown-darwin \
-	--with-llvm=$(PWD)/llvm64/usr
+	--with-llvm=$$PWD/llvm64/usr
 
 TV_CROSS_CONFIGURE_ENVIRONMENT = \
 	$(Q) CFLAGS="$(TV_CROSS_CFLAGS)" \
