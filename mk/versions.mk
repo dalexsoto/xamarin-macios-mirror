@@ -58,6 +58,7 @@ endef
 
 $(shell rm -f .check-versions-failure)
 $(eval $(call CheckSubmoduleTemplate,llvm,LLVM))
+$(eval $(call CheckSubmoduleTemplate,llvm39,LLVM39))
 $(eval $(call CheckSubmoduleTemplate,mono,MONO))
 $(eval $(call CheckSubmoduleTemplate,watch-mono,WATCH_MONO))
 $(eval $(call CheckSubmoduleTemplate,fsharp,FSHARP))
