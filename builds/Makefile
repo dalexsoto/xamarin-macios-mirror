@@ -1778,6 +1778,24 @@ endif
 LLVM_BASE_CONFIGURE_FLAGS=--enable-libcpp --enable-optimized --enable-assertions=no --disable-jit --disable-docs --disable-doxygen
 LLVM_CXXFLAGS=$(CCACHE_CXXFLAGS)
 
+ifdef ENABLE_LLVM39
+
+.stamp-configure-llvm:
+	@mkdir -p llvm/
+	@echo "Configuring llvm"
+	@cd llvm && (CXX="ccache clang++" cmake -DCMAKE_OSX_ARCHITECTURES=i386 -DCMAKE_INSTALL_PREFIX=$$PWD/usr -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=Arm -DLLVM_BUILD_TOOLS=OFF ../$(LLVM39_PATH) > $@.log 2>&1) || (echo "Configuring llvm failed:" && cat $@.log | sed "s/^/    /" && exit 1)
+	$(Q) @touch $@
+	@echo Configured llvm
+
+.stamp-configure-llvm64:
+	@mkdir -p llvm64/
+	@echo "Configuring llvm64"
+	@cd llvm64 && (CXX="ccache clang++" cmake -DCMAKE_INSTALL_PREFIX=$$PWD/usr -DCMAKE_BUILD_TYPE=Release -DLLVM_TARGETS_TO_BUILD=AArch64 ../$(LLVM39_PATH) > $@.log 2>&1) || (echo "Configuring llvm64 failed:" && cat $@.log | sed "s/^/    /" && exit 1)
+	$(Q) @touch $@
+	@echo "Configured llvm64"
+
+else # ENABLE_LLVM39
+
 # This is used just for linking with the 32 bit cross compiler
 # FIXME: Avoid building the libs not needed by mono
 .stamp-configure-llvm: $(LLVM_PATH)/configure
@@ -1795,6 +1813,8 @@ LLVM_CXXFLAGS=$(CCACHE_CXXFLAGS)
 	$(abspath $(LLVM_PATH)/configure) --prefix=$$PWD/usr --enable-targets="arm arm64" $(LLVM_BASE_CONFIGURE_FLAGS) --cache-file=../llvm64.config.cache CC="$(CCACHE)clang" CXX="$(CCACHE)clang++" CXXFLAGS="-Qunused-arguments" > $@.log 2>&1 || (echo "Configuring llvm64 failed:" && cat $@.log | sed "s/^/    /" && exit 1)
 	$(Q) @touch $@
 	@echo "Configured llvm64"
+
+endif # ENABLE_LLVM39
 
 build-llvm: .stamp-build-llvm
 build-llvm64: .stamp-build-llvm64
@@ -1891,10 +1911,10 @@ CROSS_CONFIGURE_FLAGS=$(CROSS_BASE_CONFIGURE_FLAGS)	\
 	--build=i386-apple-darwin10 \
 	--cache-file=../cross.config.cache \
 	--target=arm-darwin \
-	--with-cross-offsets=arm-apple-darwin10.h
+	--with-cross-offsets=arm-apple-darwin10.h \
+	--with-llvm=$(PWD)/llvm/usr
 
 CROSS_CONFIGURE_ENVIRONMENT = \
-	PATH="../llvm/usr/bin:$(PATH)" \
 	CFLAGS="$(CROSS_CFLAGS)" \
 	CXXFLAGS="$(CROSS_CXXFLAGS)" \
 	LDFLAGS=$(CROSS_LDFLAGS) \
@@ -1952,10 +1972,10 @@ CROSS64_CONFIGURE_FLAGS=$(CROSS_BASE_CONFIGURE_FLAGS)	\
 	--prefix=$(BUILD_DESTDIR)/cross64 \
 	--cache-file=../cross64.config.cache \
 	--target=aarch64-darwin \
-	--with-cross-offsets=aarch64-apple-darwin10.h
+	--with-cross-offsets=aarch64-apple-darwin10.h \
+	--with-llvm=$(PWD)/llvm64/usr
 
 CROSS64_CONFIGURE_ENVIRONMENT = \
-	PATH="../llvm64/usr/bin:$(PATH)" \
 	CFLAGS="$(CROSS64_CFLAGS)" \
 	CXXFLAGS="$(CROSS64_CXXFLAGS)" \
 	LDFLAGS="$(CROSS64_LDFLAGS)" \
@@ -2018,10 +2038,10 @@ WATCH_CROSS_CONFIGURE_FLAGS=$(CROSS_BASE_CONFIGURE_FLAGS)	\
 	--cache-file=../cross-watch.config.cache \
 	--target=armv7k-unknown-darwin \
 	--with-cooperative-gc=yes \
-	--with-cross-offsets=armv7k-apple-darwin.h
+	--with-cross-offsets=armv7k-apple-darwin.h \
+	--with-llvm=$(PWD)/llvm/usr
 
 WATCH_CONFIGURE_ENVIRONMENT = \
-	PATH="../llvm/usr/bin:$(PATH)" \
 	CFLAGS="$(CROSS_CFLAGS)" \
 	CXXFLAGS="$(CROSS_CXXFLAGS)" \
 	LDFLAGS=$(CROSS_LDFLAGS) \
@@ -2082,10 +2102,10 @@ TV_CROSS_CONFIGURE_FLAGS=$(CROSS_BASE_CONFIGURE_FLAGS)	\
 	--prefix=$(BUILD_DESTDIR)/crosstv \
 	--cache-file=../crosstv.config.cache \
 	--target=aarch64-unknown-darwin \
+	--with-llvm=$(PWD)/llvm64/usr
 
 TV_CROSS_CONFIGURE_ENVIRONMENT = \
-	$(Q) PATH="../llvm64/usr/bin:$(PATH)" \
-	CFLAGS="$(TV_CROSS_CFLAGS)" \
+	$(Q) CFLAGS="$(TV_CROSS_CFLAGS)" \
 	CXXFLAGS="$(TV_CROSS_CXXFLAGS)" \
 	LDFLAGS=$(TV_CROSS_LDFLAGS) \
 	CC="$(MAC_CC)" \

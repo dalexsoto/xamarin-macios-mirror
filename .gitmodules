@@ -2,6 +2,10 @@
 	path = external/llvm
 	url = ../../mono/llvm.git
 	branch = master
+[submodule "external/llvm39"]
+	path = external/llvm39
+	url = git@github.com:mono/llvm.git
+	branch = mono-2016-07-14-e6fcfbf83d968d90be0eddf33be5c27b6197a59f
 [submodule "external/mono"]
 	path = external/mono
 	url = ../../mono/mono.git
