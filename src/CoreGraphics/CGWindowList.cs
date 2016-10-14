@@ -102,7 +102,7 @@ namespace XamCore.CoreGraphics
 				for (int i = 0; i < windows.Length; i++)
 					intPtrArray [i] = (IntPtr) windows [i];
 
-				var arrayRef = CFArray.Create (intPtrArray);
+				var arrayRef = CFArray.CreateRawValues (intPtrArray);
 
 				IntPtr cfArrayRef = CGWindowListCreateDescriptionFromArray (arrayRef);
 

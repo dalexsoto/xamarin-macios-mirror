@@ -138,6 +138,18 @@ namespace XamCore.CoreFoundation {
 			}
 		}
 
+		public static unsafe IntPtr CreateRawValues (params IntPtr[] values)
+		{
+			if (values == null)
+				throw new ArgumentNullException ("values");
+			fixed (IntPtr* pv = values) {
+				return CFArrayCreate (IntPtr.Zero,
+						(IntPtr) pv,
+						values.Length,
+						IntPtr.Zero);
+			}
+		}
+
 		public static IntPtr Create (params INativeObject[] values)
 		{
 			if (values == null)
