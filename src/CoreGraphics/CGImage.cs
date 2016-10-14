@@ -30,6 +30,7 @@ using System.Runtime.InteropServices;
 
 using XamCore.ObjCRuntime;
 using XamCore.Foundation;
+using XamCore.CoreFoundation;
 
 namespace XamCore.CoreGraphics {
 
@@ -192,13 +193,13 @@ namespace XamCore.CoreGraphics {
 						shouldInterpolate, intent);
 		}
 
-#if MONOMAC
-		[DllImport (Constants.CoreGraphicsLibrary)]
-		static extern IntPtr CGWindowListCreateImage(CGRect screenBounds, CGWindowListOption windowOption, uint windowID, CGWindowImageOption imageOption);
+#if MONOMAC && !XAMCORE_4_0
+		[DllImport (Constants.CoreGraphicsLibrary, EntryPoint="CGWindowListCreateImage")]
+		internal static extern IntPtr CreateImage(CGRect screenBounds, CGWindowListOption windowOption, uint windowID, CGWindowImageOption imageOption);
         
 		public static CGImage ScreenImage (int windownumber, CGRect bounds)
 		{                    
-			IntPtr imageRef = CGWindowListCreateImage(bounds, CGWindowListOption.IncludingWindow, (uint)windownumber,
+			IntPtr imageRef = CreateImage(bounds, CGWindowListOption.IncludingWindow, (uint)windownumber,
 								  CGWindowImageOption.Default);
 			if (imageRef == IntPtr.Zero)
 				return null;
