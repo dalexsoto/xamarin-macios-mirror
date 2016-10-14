@@ -133,6 +133,7 @@
     <Compile Include="src\SearchKit\SearchKitTest.cs" />
     <Compile Include="src\SpriteKit\SKPaymentTests.cs" />
     <Compile Include="src\SpriteKit\SKScene.cs" />
+    <Compile Include="src\CoreGraphics\CGWindowList.cs" />
     <Compile Include="..\api-shared\ObjCRuntime\RegistrarTest.cs">
       <Link>shared\ObjCRuntime\RegistrarTest.cs</Link>
     </Compile>
