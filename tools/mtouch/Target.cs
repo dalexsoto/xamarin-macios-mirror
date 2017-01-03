@@ -120,11 +120,13 @@ namespace Xamarin.Bundler
 			if (App.IsExtension)
 				return;
 
-			var root_wo_ext = Path.GetFileNameWithoutExtension (App.RootAssembly);
-			foreach (var assembly in Assemblies) {
-				if (!assembly.FullPath.EndsWith (".exe", StringComparison.OrdinalIgnoreCase)) {
-					if (root_wo_ext == Path.GetFileNameWithoutExtension (assembly.FullPath))
-						throw new MonoTouchException (23, true, "Application name '{0}.exe' conflicts with another user assembly.", root_wo_ext);
+			if (!App.Embeddinator) {
+				var root_wo_ext = Path.GetFileNameWithoutExtension (App.RootAssembly);
+				foreach (var assembly in Assemblies) {
+					if (!assembly.FullPath.EndsWith (".exe", StringComparison.OrdinalIgnoreCase)) {
+						if (root_wo_ext == Path.GetFileNameWithoutExtension (assembly.FullPath))
+							throw new MonoTouchException (23, true, "Application name '{0}.exe' conflicts with another user assembly.", root_wo_ext);
+					}
 				}
 			}
 		}

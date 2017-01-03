@@ -111,6 +111,7 @@ namespace Xamarin.Bundler
 			DownloadCrashReport,
 			KillWatchApp,
 			LaunchWatchApp,
+			Embeddinator
 		}
 
 		static Action action;
@@ -791,6 +792,9 @@ namespace Xamarin.Bundler
 				}
 			}
 
+			if (app.Embeddinator)
+				monotouch = target.ProductAssembly;
+
 			// *** make sure any change in the above lists (or new list) are also reflected in 
 			// *** Makefile so simlauncher-sgen does not miss any framework
 
@@ -1025,6 +1029,11 @@ namespace Xamarin.Bundler
 			{ "v", "Verbose", v => verbose++ },
 			{ "q", "Quiet", v => verbose-- },
 			{ "time", v => watch_level++ },
+				{ "embeddinator=", "Enables Embeddinator targetting mode passing project directory as arg.", v => {
+						app.Embeddinator = true;
+						app.EmbeddinatorInputs.Add(v);
+					}
+				},
 			{ "executable=", "Specifies the native executable name to output", v => app.ExecutableName = v },
 			{ "nofastsim", "Do not run the simulator fast-path build", v => app.NoFastSim = true },
 			{ "nolink", "Do not link the assemblies", v => app.LinkMode = LinkMode.None },
