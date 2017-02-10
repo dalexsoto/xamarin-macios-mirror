@@ -21,9 +21,6 @@ using XamCore.Registrar;
 #if !MMP && !MTOUCH && !MTOUCH_TEST
 using Mono.Security.Interface;
 #endif
-#if !XAMARIN_NO_TLS
-using XamCore.Security.Tls;
-#endif
 #endif
 
 namespace XamCore.ObjCRuntime {
@@ -194,10 +191,6 @@ namespace XamCore.ObjCRuntime {
 			Class.Initialize (options);
 			InitializePlatform (options);
 
-#if !COREBUILD && (XAMARIN_APPLETLS || XAMARIN_NO_TLS)
-			MonoTlsProviderFactory._PrivateFactoryDelegate = TlsProviderFactoryCallback;
-#endif
-
 #if !XAMMAC_SYSTEM_MONO
 			UseAutoreleasePoolInThreadPool = true;
 #endif
@@ -269,13 +262,6 @@ namespace XamCore.ObjCRuntime {
 			}
 			return managed_exception_mode;
 		}
-
-#if !COREBUILD && (XAMARIN_APPLETLS || XAMARIN_NO_TLS)
-		static MonoTlsProvider TlsProviderFactoryCallback ()
-		{
-			return new AppleTlsProvider ();
-		}
-#endif
 
 		static IntPtr GetFunctionPointer (Delegate d)
 		{
