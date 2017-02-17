@@ -37,7 +37,7 @@ namespace Xamarin.Mac.Tests
 				args.Add ($"-test={testName}");
 
 #if ADD_BCL_EXCLUSIONS
-			args.Add ("-exclude=MacNotWorking,MobileNotWorking,NotOnMac,NotWorking,ValueAdd,CAS,InetAccess,NotWorkingInterpreter");
+			args.Add ("-exclude=PKITS,MacNotWorking,MobileNotWorking,NotOnMac,NotWorking,ValueAdd,CAS,InetAccess,NotWorkingInterpreter");
 #endif
 
 			TestRunner.Main (args.ToArray ());
