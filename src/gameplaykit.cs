@@ -346,14 +346,15 @@ namespace XamCore.GameplayKit {
 		[return: NullAllowed]
 		NSObject FindAction (NSDictionary<NSObject, NSObject> answers);
 
-		[iOS(11,0), TV (11,0)]
+		[iOS (11,0), TV (11,0)]
+		[Mac (10,13, onlyOn64: true)]
 		[Export ("initWithURL:error:")]
 		IntPtr Constructor (NSUrl url, [NullAllowed] NSError error);
 
-		[iOS(11,0), TV (11,0)]
+		[iOS (11,0), TV (11,0)]
+		[Mac (10,13, onlyOn64: true)]
 		[Export ("exportToURL:error:")]
-		bool ExportToURL (NSUrl url, [NullAllowed] NSError error);
-
+		bool Export (NSUrl url, [NullAllowed] NSError error);
 	}
 
 	[iOS (9,0), Mac (10,11, onlyOn64 : true)]
@@ -1779,6 +1780,7 @@ namespace XamCore.GameplayKit {
 		[return: NullAllowed]
 		GKScene FromFile (string filename);
 
+		[iOS (11,0)][TV (11,0)][Mac (10,13, onlyOn64: true)]
 		[Static]
 		[Export ("sceneWithFileNamed:rootNode:")]
 		[return: NullAllowed]
@@ -1807,6 +1809,8 @@ namespace XamCore.GameplayKit {
 	}
 
 	[iOS (11,0)]
+	[TV (11,0)]
+	[Mac (10,13, onlyOn64: true)]
 	[BaseType (typeof(GKComponent))]
 	interface GKSCNNodeComponent : GKAgentDelegate
 	{

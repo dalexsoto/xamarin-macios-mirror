@@ -164,6 +164,13 @@ namespace Introspection {
 					return true;
 				}
 				break;
+			case "GKSceneRootNodeType":
+				// this might be related to how the tests are run (it's not a fully set up scene)
+				switch (type.Name) {
+				case "SCNScene":
+					return true;
+				}
+				break;
 			}
 			return false;
 		}
