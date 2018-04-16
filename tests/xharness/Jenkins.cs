@@ -1026,6 +1026,7 @@ namespace xharness
 							rv.Add (v);
 							return rv;
 						});
+						string serveFile = null;
 						switch (request.Url.LocalPath) {
 						case "/":
 							response.ContentType = System.Net.Mime.MediaTypeNames.Text.Html;
@@ -1246,8 +1247,14 @@ namespace xharness
 							response.OutputStream.Write (favicon, 0, favicon.Length);
 							response.OutputStream.Close ();
 							break;
+						case "/xharness.css":
+						case "/xharness.js":
+							serveFile = Path.Combine (Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly ().Location), request.Url.LocalPath.Substring (1));
+							goto default;
 						default:
-							var path = Path.Combine (LogDirectory, request.Url.LocalPath.Substring (1));
+							if (serveFile == null)
+								serveFile = Path.Combine (LogDirectory, request.Url.LocalPath.Substring (1));
+							var path = serveFile;
 							if (File.Exists (path)) {
 								var buffer = new byte [4096];
 								using (var fs = new FileStream (path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
@@ -1256,6 +1263,9 @@ namespace xharness
 									switch (Path.GetExtension (path).ToLowerInvariant ()) {
 									case ".html":
 										response.ContentType = System.Net.Mime.MediaTypeNames.Text.Html;
+										break;
+									case ".css":
+										response.ContentType = "text/css";
 										break;
 									default:
 										response.ContentType = System.Net.Mime.MediaTypeNames.Text.Plain;
@@ -1367,6 +1377,7 @@ namespace xharness
 							GenerateReportImpl (stream, markdown_writer);
 						}
 					}
+
 					if (File.Exists (report))
 						File.Delete (report);
 					File.Move (tmpreport, report);
@@ -1375,6 +1386,9 @@ namespace xharness
 							File.Delete (Harness.MarkdownSummaryPath);
 						File.Move (tmpmarkdown, Harness.MarkdownSummaryPath);
 					}
+
+					foreach (var file in new string [] { "xharness.js", "xharness.css" })
+						File.Copy (Path.Combine (Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly ().Location), file), Path.Combine (LogDirectory, file), true);
 				}
 			} catch (Exception e) {
 				this.MainLog.WriteLine ("Failed to write log: {0}", e);
@@ -1496,73 +1510,10 @@ namespace xharness
 				writer.WriteLine ("<html onkeypress='keyhandler(event)' lang='en'>");
 				if (IsServerMode && populating)
 					writer.WriteLine ("<meta http-equiv=\"refresh\" content=\"1\">");
-				writer.WriteLine (@"<head>
-<style>
-.pdiv { display: table; padding-top: 10px; }
-.p1 { }
-.p2 { }
-.p3 { }
-.expander { display: table-cell; height: 100%; padding-right: 6px; text-align: center; vertical-align: middle; min-width: 10px; }
-.runall { font-size: 75%; margin-left: 3px; }
-.logs { padding-bottom: 10px; padding-top: 10px; padding-left: 30px; }
-
-#nav {
-	display: inline-block;
-	width: 350px;
-}
-
-#nav > * {
-	display: inline;
-	width: 300px;
-}
-
-#nav ul {
-	background: #ffffff;
-	list-style: none;
-	position: absolute;
-	left: -9999px;
-	padding: 10px;
-	z-index: 2;
-	width: 200px;
-	border-style: ridge;
-	border-width: thin;
-}
-
-#nav li {
-	margin-right: 10px;
-	position: relative;
-}
-#nav a {
-	display: block;
-	padding: 5px;
-	text-decoration: none;
-}
-#nav a:hover {
-	text-decoration: underline;
-}
-#nav ul li {
-	padding-top: 0;
-	padding-bottom: 0;
-	padding-left: 0;
-}
-#nav ul a {
-	white-space: nowrap;
-}
-#nav li:hover ul { 
-	left: 0;
-}
-#nav li:hover a {
-	text-decoration: underline;
-}
-#nav li:hover ul a { 
-	text-decoration:none;
-}
-#nav li:hover ul li a:hover {
-	text-decoration: underline;
-}
-
-</style>");
+				writer.WriteLine ("<head>");
+				writer.WriteLine ("<link rel='stylesheet' href='xharness.css'>");
 				writer.WriteLine ("<title>Test results</title>");
+<<<<<<< HEAD
 				writer.WriteLine (@"<script type='text/javascript'>
 var ajax_log = null;
 function addlog (msg)
@@ -1778,7 +1729,14 @@ function toggleAll (show)
 
 ");
 				if (IsServerMode)
+=======
+				writer.WriteLine (@"<script type='text/javascript' src='xharness.js'></script>");
+				if (IsServerMode) {
+					writer.WriteLine (@"<script type='text/javascript'>");
+>>>>>>> [xharness] Move js and css to external files.
 					writer.WriteLine ("setTimeout (autorefresh, 1000);");
+					writer.WriteLine (@"</script>");
+				}
 				writer.WriteLine ("</script>");
 				writer.WriteLine ("</head>");
 				writer.WriteLine ("<body onload='oninitialload ();'>");
