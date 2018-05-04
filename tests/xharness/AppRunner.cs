@@ -575,7 +575,7 @@ namespace xharness
 			if (mode == "watchos") {
 				transport = isSimulator ? "FILE" : "HTTP";
 			} else {
-				transport = "TCP";
+				transport = isSimulator ? "TCP" : "INCOMING-TCP";
 			}
 			args.AppendFormat (" -argument=-app-arg:-transport:{0}", transport);
 			args.AppendFormat (" -setenv=NUNIT_TRANSPORT={0}", transport);
@@ -592,6 +592,7 @@ namespace xharness
 			case "HTTP":
 				listener = new SimpleHttpListener ();
 				break;
+			case "INCOMING-TCP":
 			case "TCP":
 				listener = new SimpleTcpListener ();
 				break;
@@ -611,8 +612,14 @@ namespace xharness
 					TestsLaunched = true;
 			});
 
-			args.AppendFormat (" -argument=-app-arg:-hostport:{0}", listener.Port);
-			args.AppendFormat (" -setenv=NUNIT_HOSTPORT={0}", listener.Port);
+			if (transport == "INCOMING-TCP") {
+				args.AppendFormat (" -setenv=NUNIT_HOSTPORT=20000");
+				args.AppendFormat (" -argument=-app-arg:-hostport:20000");
+				args.AppendFormat (" -tcp-tunnel:20000:{0}", listener.Port);
+			} else {
+				args.AppendFormat (" -argument=-app-arg:-hostport:{0}", listener.Port);
+				args.AppendFormat (" -setenv=NUNIT_HOSTPORT={0}", listener.Port);
+			}
 
 			listener.StartAsync ();
 
