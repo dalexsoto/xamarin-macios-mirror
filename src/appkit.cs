@@ -3921,10 +3921,6 @@ namespace AppKit {
 		[Mac (10,10)]
 		[Static, Export ("quaternaryLabelColor")]
 		NSColor QuaternaryLabelColor { get; }
-
-		[Mac (10, 10)]
-		[Static, Export ("linkColor", ArgumentSemantic.Strong)]
-		NSColor LinkColor { get; }
 		
 		[Mac (10,12)]
 		[Static]
