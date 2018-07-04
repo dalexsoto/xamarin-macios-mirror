@@ -355,7 +355,7 @@ timestamps {
 
                             dir ('xamarin-macios') {
                                 stage ('Launch tests on device') {
-                                    build (job: "../macios-device-tests", parameters: [
+                                    build (job: "../macios-device-tests", wait: false, parameters: [
                                         string (name: "XAMARIN_MACIOS_HASH", value: "${gitHash}"),
                                         string (name: "XI_PACKAGE", value: "${xiPackageUrl}"),
                                         string (name: "XM_PACKAGE", value: "${xmPackageUrl}"),
