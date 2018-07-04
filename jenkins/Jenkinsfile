@@ -209,7 +209,13 @@ timestamps {
                             isDeviceTests = (env.XAMARIN_MACIOS_HASH && !env.XAMARIN_MACIOS_HASH.empty ? true : false)
                             sh ('env')
                             echo ("isDeviceTests: ${isDeviceTests}")
-                            scmVars = checkout scm
+                            if (isDeviceTests) {
+                                // the device test job takes the hash to checkout as a parameter,
+                                // so we need to checkout differently
+                                scmVars = checkout ([$class: 'GitSCM', branches: [[name: env.XAMARIN_MACIOS_HASH ]])
+                            } else {
+                                scmVars = checkout scm
+                            }
                             isPr = (env.CHANGE_ID && !env.CHANGE_ID.empty ? true : false)
                             branchName = env.BRANCH_NAME
                             if (isPr) {
@@ -237,244 +243,261 @@ timestamps {
                     }
 
                     dir ("${workspace}") {
-                        stage ('Provisioning') {
-                            currentStage = "${STAGE_NAME}"
-                            echo ("Building on ${env.NODE_NAME}")
-                            sh ("cd ${workspace}/xamarin-macios && ./configure --enable-xamarin")
-                            sh ("${workspace}/xamarin-macios/jenkins/provision-deps.sh")
-                        }
-
-                        stage ('Build') {
-                            currentStage = "${STAGE_NAME}"
-                            echo ("Building on ${env.NODE_NAME}")
-                            withEnv ([
-                                "CURRENT_BRANCH=${branchName}",
-                                "PACKAGE_HEAD_BRANCH=${branchName}"
-                                ]) {
-                                sh ("${workspace}/xamarin-macios/jenkins/build.sh --configure-flags --enable-xamarin")
-                            }
-                        }
-
-                        stage ('Packaging') {
-                            currentStage = "${STAGE_NAME}"
-                            echo ("Building on ${env.NODE_NAME}")
-                            sh ("${workspace}/xamarin-macios/jenkins/build-package.sh")
-                            sh (script: "ls -la ${workspace}/package", returnStatus: true /* don't throw exceptions if something goes wrong */)
-                        }
-
-                        stage ('Signing') {
-                            currentStage = "${STAGE_NAME}"
-                            echo ("Building on ${env.NODE_NAME}")
-                            def xiPackages = findFiles (glob: "package/xamarin.ios-*.pkg")
-                            if (xiPackages.length > 0) {
-                                xiPackageFilename = xiPackages [0].name
-                                echo ("Created Xamarin.iOS package: ${xiPackageFilename}")
-                            }
-                            def xmPackages = findFiles (glob: "package/xamarin.mac-*.pkg")
-                            if (xmPackages.length > 0) {
-                                xmPackageFilename = xmPackages [0].name
-                                echo ("Created Xamarin.Mac package: ${xmPackageFilename}")
-                            }
-                            withCredentials ([string (credentialsId: 'codesign_keychain_pw', variable: 'PRODUCTSIGN_KEYCHAIN_PASSWORD')]) {
-                                sh ("${workspace}/xamarin-macios/jenkins/productsign.sh")
-                            }
-                        }
-
-                        stage ('Upload to Azure') {
-                            currentStage = "${STAGE_NAME}"
-                            virtualPath = "jenkins/${branchName}/${gitHash}/${env.BUILD_NUMBER}"
-                            packagePrefix = "https://bosstoragemirror.blob.core.windows.net/wrench/${virtualPath}/package"
-
-                            // Create artifacts.json and manifest
-                            def uploadingFiles = findFiles (glob: "package/*")
-                            def manifest = ""
-                            def artifacts = "[\n"
-                            for (int i = 0; i < uploadingFiles.length; i++) {
-                                def file = uploadingFiles [i]
-                                def f_length = file.length;
-                                def md5 = sh (returnStdout: true, script: "md5 -q '${file}'").trim ()
-                                def sha256 = sh (returnStdout: true, script: "shasum -a 256").trim ().split (" ") [0];
-                                manifest += "${packagePrefix}/${file.name}\n"
-                                artifacts += "  {\n"
-                                artifacts += "    \"file\": \"${file.name}\",\n"
-                                artifacts += "    \"url\": \"${packagePrefix}/${file.name}\",\n"
-                                artifacts += "    \"md5\": \"${md5}\",\n"
-                                artifacts += "    \"sha256\": \"${sha256}\",\n"
-                                artifacts += "    \"size\": ${f_length}\n"
-                                artifacts += "  }"
-                                if (i < uploadingFiles.length - 1)
-                                    artifacts += ","
-                                artifacts +="\n"
-                            }
-                            artifacts += "]\n"
-                            manifest += "${packagePrefix}/artifacts.json\n"
-                            manifest += "${packagePrefix}/manifest\n"
-                            writeFile (file: "package/manifest", text: manifest)
-                            writeFile (file: "package/artifacts.json", text: artifacts)
-
-                            sh ("ls -la package")
-                            uploadFiles ("package/*", virtualPath)
-
-                            // Also upload manifest to a predictable url (without the build number)
-                            // This manifest will be overwritten in subsequent builds (for this [PR/branch]+hash combination)
-                            uploadFiles ("package/manifest", "jenkins/${branchName}/${gitHash}")
-                            // And also create a 'latest' version (which really means 'latest built', not 'latest hash', but it will hopefully be good enough)
-                            uploadFiles ("package/manifest", "jenkins/${branchName}/latest")
-
-                            manifestFilename = "manifest"
-                            artifactsFilename = "artifacts.json"
-                        }
-
-                        stage ('Publish builds to GitHub') {
-                            currentStage = "${STAGE_NAME}"
-                            utils = load ("${workspace}/xamarin-macios/jenkins/utils.groovy")
-                            if (xiPackageFilename != null) {
-                                xiPackageUrl = "${packagePrefix}/${xiPackageFilename}"
-                                utils.reportGitHubStatus (gitHash, 'jenkins-PKG-Xamarin.iOS', "${xiPackageUrl}", 'SUCCESS', "${xiPackageFilename}")
-                            }
-                            if (xmPackageFilename != null) {
-                                xmPackageUrl = "${packagePrefix}/${xmPackageFilename}"
-                                utils.reportGitHubStatus (gitHash, 'jenkins-PKG-Xamarin.Mac', "${xmPackageUrl}", 'SUCCESS', "${xmPackageFilename}")
-                            }
-                            if (manifestFilename != null) {
-                                def manifestUrl = "${packagePrefix}/${manifestFilename}"
-                                utils.reportGitHubStatus (gitHash, "${manifestFilename}", "${manifestUrl}", 'SUCCESS', "${manifestFilename}")
-                            }
-                            if (artifactsFilename != null) {
-                                def artifactUrl = "${packagePrefix}/${artifactsFilename}"
-                                utils.reportGitHubStatus (gitHash, "Jenkins: Artifacts", "${artifactUrl}", 'SUCCESS', "${artifactsFilename}")
-                            }
-                        }
-
-                        dir ('xamarin-macios') {
-                            stage ('Launch tests on device') {
-                                build (job: "../macios-device-tests", parameters: [
-                                    string (name: "XAMARIN_MACIOS_HASH", value: "${gitHash}"),
-                                    string (name: "XI_PACKAGE", value: "${xiPackageUrl}"),
-                                    string (name: "XM_PACKAGE", value: "${xmPackageUrl}"),
-                                    string (name: "CONTINUOUS_INTEGRATION_URL", value: "${env.RUN_DISPLAY_URL}"),
-                                    string (name: "XAMARIN_MACIOS_BRANCH", value: "${branchName}")
-                                    ])
-                            }
-                            throw new Exception ("Skipping the rest for now")
-                            stage ('Launch external tests') {
+                        if (!isDeviceTests) {
+                            stage ('Provisioning') {
                                 currentStage = "${STAGE_NAME}"
-                                if (isPr) {
-                                    echo "Currently not launching external tests for pull requests"
-                                } else {
-                                    def outputFile = "${workspace}/xamarin-macios/wrench-launch-external.output.tmp"
-                                    try {
-                                        withCredentials ([string (credentialsId: 'macios_provisionator_pat', variable: 'PROVISIONATOR_VSTS_PAT')]) {
-                                            sh ("make -C ${workspace}/xamarin-macios/tests wrench-launch-external MAC_PACKAGE_URL=${xmPackageUrl} IOS_PACKAGE_URL=${xiPackageUrl} WRENCH_URL=${env.RUN_DISPLAY_URL} BUILD_REVISION=${gitHash} BUILD_LANE=jenkins/${branchName} BUILD_WORK_HOST=${env.NODE_NAME} 2>&1 | tee ${outputFile}")
+                                echo ("Building on ${env.NODE_NAME}")
+                                sh ("cd ${workspace}/xamarin-macios && ./configure --enable-xamarin")
+                                sh ("${workspace}/xamarin-macios/jenkins/provision-deps.sh")
+                            }
+
+                            stage ('Build') {
+                                currentStage = "${STAGE_NAME}"
+                                echo ("Building on ${env.NODE_NAME}")
+                                withEnv ([
+                                    "CURRENT_BRANCH=${branchName}",
+                                    "PACKAGE_HEAD_BRANCH=${branchName}"
+                                    ]) {
+                                    sh ("${workspace}/xamarin-macios/jenkins/build.sh --configure-flags --enable-xamarin")
+                                }
+                            }
+
+                            stage ('Packaging') {
+                                currentStage = "${STAGE_NAME}"
+                                echo ("Building on ${env.NODE_NAME}")
+                                sh ("${workspace}/xamarin-macios/jenkins/build-package.sh")
+                                sh (script: "ls -la ${workspace}/package", returnStatus: true /* don't throw exceptions if something goes wrong */)
+                            }
+
+                            stage ('Signing') {
+                                currentStage = "${STAGE_NAME}"
+                                echo ("Building on ${env.NODE_NAME}")
+                                def xiPackages = findFiles (glob: "package/xamarin.ios-*.pkg")
+                                if (xiPackages.length > 0) {
+                                    xiPackageFilename = xiPackages [0].name
+                                    echo ("Created Xamarin.iOS package: ${xiPackageFilename}")
+                                }
+                                def xmPackages = findFiles (glob: "package/xamarin.mac-*.pkg")
+                                if (xmPackages.length > 0) {
+                                    xmPackageFilename = xmPackages [0].name
+                                    echo ("Created Xamarin.Mac package: ${xmPackageFilename}")
+                                }
+                                withCredentials ([string (credentialsId: 'codesign_keychain_pw', variable: 'PRODUCTSIGN_KEYCHAIN_PASSWORD')]) {
+                                    sh ("${workspace}/xamarin-macios/jenkins/productsign.sh")
+                                }
+                            }
+
+                            stage ('Upload to Azure') {
+                                currentStage = "${STAGE_NAME}"
+                                virtualPath = "jenkins/${branchName}/${gitHash}/${env.BUILD_NUMBER}"
+                                packagePrefix = "https://bosstoragemirror.blob.core.windows.net/wrench/${virtualPath}/package"
+
+                                // Create artifacts.json and manifest
+                                def uploadingFiles = findFiles (glob: "package/*")
+                                def manifest = ""
+                                def artifacts = "[\n"
+                                for (int i = 0; i < uploadingFiles.length; i++) {
+                                    def file = uploadingFiles [i]
+                                    def f_length = file.length;
+                                    def md5 = sh (returnStdout: true, script: "md5 -q '${file}'").trim ()
+                                    def sha256 = sh (returnStdout: true, script: "shasum -a 256").trim ().split (" ") [0];
+                                    manifest += "${packagePrefix}/${file.name}\n"
+                                    artifacts += "  {\n"
+                                    artifacts += "    \"file\": \"${file.name}\",\n"
+                                    artifacts += "    \"url\": \"${packagePrefix}/${file.name}\",\n"
+                                    artifacts += "    \"md5\": \"${md5}\",\n"
+                                    artifacts += "    \"sha256\": \"${sha256}\",\n"
+                                    artifacts += "    \"size\": ${f_length}\n"
+                                    artifacts += "  }"
+                                    if (i < uploadingFiles.length - 1)
+                                        artifacts += ","
+                                    artifacts +="\n"
+                                }
+                                artifacts += "]\n"
+                                manifest += "${packagePrefix}/artifacts.json\n"
+                                manifest += "${packagePrefix}/manifest\n"
+                                writeFile (file: "package/manifest", text: manifest)
+                                writeFile (file: "package/artifacts.json", text: artifacts)
+
+                                sh ("ls -la package")
+                                uploadFiles ("package/*", virtualPath)
+
+                                // Also upload manifest to a predictable url (without the build number)
+                                // This manifest will be overwritten in subsequent builds (for this [PR/branch]+hash combination)
+                                uploadFiles ("package/manifest", "jenkins/${branchName}/${gitHash}")
+                                // And also create a 'latest' version (which really means 'latest built', not 'latest hash', but it will hopefully be good enough)
+                                uploadFiles ("package/manifest", "jenkins/${branchName}/latest")
+
+                                manifestFilename = "manifest"
+                                artifactsFilename = "artifacts.json"
+                            }
+
+                            stage ('Publish builds to GitHub') {
+                                currentStage = "${STAGE_NAME}"
+                                utils = load ("${workspace}/xamarin-macios/jenkins/utils.groovy")
+                                if (xiPackageFilename != null) {
+                                    xiPackageUrl = "${packagePrefix}/${xiPackageFilename}"
+                                    utils.reportGitHubStatus (gitHash, 'jenkins-PKG-Xamarin.iOS', "${xiPackageUrl}", 'SUCCESS', "${xiPackageFilename}")
+                                }
+                                if (xmPackageFilename != null) {
+                                    xmPackageUrl = "${packagePrefix}/${xmPackageFilename}"
+                                    utils.reportGitHubStatus (gitHash, 'jenkins-PKG-Xamarin.Mac', "${xmPackageUrl}", 'SUCCESS', "${xmPackageFilename}")
+                                }
+                                if (manifestFilename != null) {
+                                    def manifestUrl = "${packagePrefix}/${manifestFilename}"
+                                    utils.reportGitHubStatus (gitHash, "${manifestFilename}", "${manifestUrl}", 'SUCCESS', "${manifestFilename}")
+                                }
+                                if (artifactsFilename != null) {
+                                    def artifactUrl = "${packagePrefix}/${artifactsFilename}"
+                                    utils.reportGitHubStatus (gitHash, "Jenkins: Artifacts", "${artifactUrl}", 'SUCCESS', "${artifactsFilename}")
+                                }
+                            }
+
+                            dir ('xamarin-macios') {
+                                stage ('Launch tests on device') {
+                                    build (job: "../macios-device-tests", parameters: [
+                                        string (name: "XAMARIN_MACIOS_HASH", value: "${gitHash}"),
+                                        string (name: "XI_PACKAGE", value: "${xiPackageUrl}"),
+                                        string (name: "XM_PACKAGE", value: "${xmPackageUrl}"),
+                                        string (name: "CONTINUOUS_INTEGRATION_URL", value: "${env.RUN_DISPLAY_URL}"),
+                                        string (name: "XAMARIN_MACIOS_BRANCH", value: "${branchName}")
+                                        ])
+                                }
+                                throw new Exception ("Skipping the rest for now")
+                                stage ('Launch external tests') {
+                                    currentStage = "${STAGE_NAME}"
+                                    if (isPr) {
+                                        echo "Currently not launching external tests for pull requests"
+                                    } else {
+                                        def outputFile = "${workspace}/xamarin-macios/wrench-launch-external.output.tmp"
+                                        try {
+                                            withCredentials ([string (credentialsId: 'macios_provisionator_pat', variable: 'PROVISIONATOR_VSTS_PAT')]) {
+                                                sh ("make -C ${workspace}/xamarin-macios/tests wrench-launch-external MAC_PACKAGE_URL=${xmPackageUrl} IOS_PACKAGE_URL=${xiPackageUrl} WRENCH_URL=${env.RUN_DISPLAY_URL} BUILD_REVISION=${gitHash} BUILD_LANE=jenkins/${branchName} BUILD_WORK_HOST=${env.NODE_NAME} 2>&1 | tee ${outputFile}")
+                                            }
+                                            processAtMonkeyWrench (outputFile)
+                                        } catch (error) {
+                                            echo ("🚫 Launching external tests failed: ${error} 🚫")
+                                            manager.addWarningBadge ("Failed to launch external tests")
+                                        } finally {
+                                            sh ("rm -f '${outputFile}'")
                                         }
-                                        processAtMonkeyWrench (outputFile)
-                                    } catch (error) {
-                                        echo ("🚫 Launching external tests failed: ${error} 🚫")
-                                        manager.addWarningBadge ("Failed to launch external tests")
-                                    } finally {
-                                        sh ("rm -f '${outputFile}'")
                                     }
                                 }
-                            }
 
-                            stage ('Install Provisioning Profiles') {
-                                currentStage = "${STAGE_NAME}"
-                                sh ("${workspace}/maccore/tools/install-qa-provisioning-profiles.sh")
-                            }
-
-                            stage ('Publish reports') {
-                                currentStage = "${STAGE_NAME}"
-                                reportPrefix = sh (script: "${workspace}/xamarin-macios/jenkins/publish-results.sh | grep '^Url Prefix: ' | sed 's/^Url Prefix: //'", returnStdout: true).trim ()
-                                if (skipLocalTestRunReason == "") {
-                                    echo ("Html report: ${reportPrefix}/tests/index.html")
-                                } else {
-                                    echo ("Html report: ${skipLocalTestRunReason}")
+                                stage ('Install Provisioning Profiles') {
+                                    currentStage = "${STAGE_NAME}"
+                                    sh ("${workspace}/maccore/tools/install-qa-provisioning-profiles.sh")
                                 }
-                                echo ("API diff (from stable): ${reportPrefix}/api-diff/index.html")
-                                echo ("API diff (from previous commit / before pull request): ${reportPrefix}/apicomparison/api-diff.html")
-                                echo ("Generator diff: ${reportPrefix}/generator-diff/index.html")
-                            }
 
-                            stage ('API diff') {
-                                currentStage = "${STAGE_NAME}"
-                                def apidiffResult = sh (script: "${workspace}/xamarin-macios/jenkins/build-api-diff.sh --publish", returnStatus: true)
-                                if (apidiffResult != 0)
-                                    manager.addWarningBadge ("Failed to generate API diff")
-                                echo ("API diff (from stable): ${reportPrefix}/api-diff/index.html")
-                            }
+                                stage ('Publish reports') {
+                                    currentStage = "${STAGE_NAME}"
+                                    reportPrefix = sh (script: "${workspace}/xamarin-macios/jenkins/publish-results.sh | grep '^Url Prefix: ' | sed 's/^Url Prefix: //'", returnStdout: true).trim ()
+                                    if (skipLocalTestRunReason == "") {
+                                        echo ("Html report: ${reportPrefix}/tests/index.html")
+                                    } else {
+                                        echo ("Html report: ${skipLocalTestRunReason}")
+                                    }
+                                    echo ("API diff (from stable): ${reportPrefix}/api-diff/index.html")
+                                    echo ("API diff (from previous commit / before pull request): ${reportPrefix}/apicomparison/api-diff.html")
+                                    echo ("Generator diff: ${reportPrefix}/generator-diff/index.html")
+                                }
 
-                            stage ('API & Generator comparison') {
-                                currentStage = "${STAGE_NAME}"
-                                def compareResult = sh (script: "${workspace}/xamarin-macios/jenkins/compare.sh --publish", returnStatus: true)
-                                if (compareResult != 0)
-                                    manager.addWarningBadge ("Failed to generate API / Generator diff")
-                                echo ("API diff (from previous commit / before pull request): ${reportPrefix}/apicomparison/api-diff.html")
-                                echo ("Generator diff: ${reportPrefix}/generator-diff/index.html")
-                            }
+                                stage ('API diff') {
+                                    currentStage = "${STAGE_NAME}"
+                                    def apidiffResult = sh (script: "${workspace}/xamarin-macios/jenkins/build-api-diff.sh --publish", returnStatus: true)
+                                    if (apidiffResult != 0)
+                                        manager.addWarningBadge ("Failed to generate API diff")
+                                    echo ("API diff (from stable): ${reportPrefix}/api-diff/index.html")
+                                }
 
-                            stage ("Package XM tests") {
-                                currentStage = "${STAGE_NAME}"
-                                sh ("make -C ${workspace}/xamarin-macios/tests package-tests")
-                                uploadFiles ("tests/*.zip", virtualPath)
-                            }
+                                stage ('API & Generator comparison') {
+                                    currentStage = "${STAGE_NAME}"
+                                    def compareResult = sh (script: "${workspace}/xamarin-macios/jenkins/compare.sh --publish", returnStatus: true)
+                                    if (compareResult != 0)
+                                        manager.addWarningBadge ("Failed to generate API / Generator diff")
+                                    echo ("API diff (from previous commit / before pull request): ${reportPrefix}/apicomparison/api-diff.html")
+                                    echo ("Generator diff: ${reportPrefix}/generator-diff/index.html")
+                                }
 
-                            timeout (time: 6, unit: 'HOURS') {
-                                // We run tests locally and on older macOS bots in parallel.
-                                // The older macOS tests run quickly (and the bots should usually be idle),
-                                // which means that the much longer normal (local) test run should take
-                                // longer to complete (which is important since this will block until all tests
-                                // have been run, even if any older macOS bots are busy doing other things, preventing
-                                // our tests from running there), giving the older macOS bots plenty of
-                                // time to finish their test runs.
-                                stage ('Run tests parallelized') {
-                                    def builders = [:]
+                                stage ("Package XM tests") {
+                                    currentStage = "${STAGE_NAME}"
+                                    sh ("make -C ${workspace}/xamarin-macios/tests package-tests")
+                                    uploadFiles ("tests/*.zip", virtualPath)
+                                }
 
-                                    // Add test runs on older macOS versions
-                                    def url = "https://bosstoragemirror.blob.core.windows.net/wrench/${virtualPath}/tests/mac-test-package.zip"
-                                    def firstOS = sh (returnStdout: true, script: "grep ^MIN_OSX_SDK_VERSION= '${workspace}/xamarin-macios/Make.config' | sed 's/.*=//'").trim ().split ("\\.")[1].toInteger ()
-                                    def lastOS = sh (returnStdout: true, script: "grep ^OSX_SDK_VERSION= '${workspace}/xamarin-macios/Make.config' | sed 's/.*=//'").trim ().split ("\\.")[1].toInteger ()
-                                    for (os = firstOS; os < lastOS; os++) {
-                                        def macOS = "${os}" // Need to bind the label variable before the closure
-                                        builders ["XM tests on 10.${macOS}"] = {
-                                            try {
-                                                node ("xamarin-macios && macos-10.${macOS}") {
-                                                    stage ("Running XM tests on '10.${macOS}'") {
-                                                        runXamarinMacTests (url, "macOS 10.${macOS}")
+                                timeout (time: 6, unit: 'HOURS') {
+                                    // We run tests locally and on older macOS bots in parallel.
+                                    // The older macOS tests run quickly (and the bots should usually be idle),
+                                    // which means that the much longer normal (local) test run should take
+                                    // longer to complete (which is important since this will block until all tests
+                                    // have been run, even if any older macOS bots are busy doing other things, preventing
+                                    // our tests from running there), giving the older macOS bots plenty of
+                                    // time to finish their test runs.
+                                    stage ('Run tests parallelized') {
+                                        def builders = [:]
+
+                                        // Add test runs on older macOS versions
+                                        def url = "https://bosstoragemirror.blob.core.windows.net/wrench/${virtualPath}/tests/mac-test-package.zip"
+                                        def firstOS = sh (returnStdout: true, script: "grep ^MIN_OSX_SDK_VERSION= '${workspace}/xamarin-macios/Make.config' | sed 's/.*=//'").trim ().split ("\\.")[1].toInteger ()
+                                        def lastOS = sh (returnStdout: true, script: "grep ^OSX_SDK_VERSION= '${workspace}/xamarin-macios/Make.config' | sed 's/.*=//'").trim ().split ("\\.")[1].toInteger ()
+                                        for (os = firstOS; os < lastOS; os++) {
+                                            def macOS = "${os}" // Need to bind the label variable before the closure
+                                            builders ["XM tests on 10.${macOS}"] = {
+                                                try {
+                                                    node ("xamarin-macios && macos-10.${macOS}") {
+                                                        stage ("Running XM tests on '10.${macOS}'") {
+                                                            runXamarinMacTests (url, "macOS 10.${macOS}")
+                                                        }
                                                     }
+                                                } catch (err) {
+                                                    currentStage = "Running XM tests on '10.${macOS}'"
+                                                    appendFileComment ("🔥 [Xamarin.Mac tests on 10.${macOS} failed](${env.RUN_DISPLAY_URL}) 🔥\n")
+                                                    throw err
                                                 }
-                                            } catch (err) {
-                                                currentStage = "Running XM tests on '10.${macOS}'"
-                                                appendFileComment ("🔥 [Xamarin.Mac tests on 10.${macOS} failed](${env.RUN_DISPLAY_URL}) 🔥\n")
-                                                throw err
                                             }
                                         }
-                                    }
 
-                                    // Add standard test run
-                                    builders ["All tests"] = {
-                                        stage ('Run tests') {
-                                            currentStage = "Test run"
-                                            echo ("Building on ${env.NODE_NAME}")
-                                            if (skipLocalTestRunReason != "") {
-                                                echo (skipLocalTestRunReason)
-                                                appendFileComment ("ℹ️ Test run skipped: ${skipLocalTestRunReason}\n")
-                                            } else {
-                                                echo ("Html report: ${reportPrefix}/tests/index.html")
-                                                sh ("${workspace}/xamarin-macios/jenkins/run-tests.sh --target=wrench-jenkins --publish --keychain=xamarin-macios")
+                                        // Add standard test run
+                                        builders ["All tests"] = {
+                                            stage ('Run tests') {
+                                                currentStage = "Test run"
+                                                echo ("Building on ${env.NODE_NAME}")
+                                                if (skipLocalTestRunReason != "") {
+                                                    echo (skipLocalTestRunReason)
+                                                    appendFileComment ("ℹ️ Test run skipped: ${skipLocalTestRunReason}\n")
+                                                } else {
+                                                    echo ("Html report: ${reportPrefix}/tests/index.html")
+                                                    sh ("${workspace}/xamarin-macios/jenkins/run-tests.sh --target=wrench-jenkins --publish --keychain=xamarin-macios")
+                                                }
+                                            }
+                                            stage ('Test docs') {
+                                                currentStage = "${STAGE_NAME}"
+                                                echo ("Building on ${env.NODE_NAME}")
+                                                sh ("make -C ${workspace}/xamarin-macios/tests wrench-docs")
                                             }
                                         }
-                                        stage ('Test docs') {
-                                            currentStage = "${STAGE_NAME}"
-                                            echo ("Building on ${env.NODE_NAME}")
-                                            sh ("make -C ${workspace}/xamarin-macios/tests wrench-docs")
-                                        }
-                                    }
 
-                                    // Run it all parallelized
-                                    parallel builders
+                                        // Run it all parallelized
+                                        parallel builders
+                                    }
+                                }
+                            } // dir ("xamarin-macios")
+                        } else {
+                            stage ('Provisioning') {
+                                // Download & install Xamarin.iOS
+                                sh (script: "curl -fL ${params.XI_PACKAGE} --output xamarin.ios.pkg")
+                                sh (script: "sudo installer -pkg xamarin.ios.pkg -target / -verbose -dumplog")
+                                // Provision other dependencies
+                                sh (script: "${workspace}/xamarin-macios/system-dependencies.sh  --provision-xcode --provision-xamarin-studio --provision-mono --ignore-osx --ignore-autotools --ignore-cmake")
+                            }
+                            stage ('Run device tests') {
+                                // The device tests can take a while...
+                                timeout (time: 36, unit: 'HOURS') {
+                                    echo ("Html report: ${reportPrefix}/tests/index.html")
+                                    sh ("${workspace}/xamarin-macios/jenkins/run-tests.sh --target=vsts-device-tests --publish --keychain=xamarin-macios")
                                 }
                             }
-                        } // dir ("xamarin-macios")
+                        } // isDeviceTests
                     } // dir ("${workspace}")
                 }
                 reportFinalStatus ("", "${gitHash}", "${currentStage}")
