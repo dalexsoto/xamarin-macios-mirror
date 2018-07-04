@@ -4,6 +4,7 @@
 repository = "xamarin/xamarin-macios"
 commentFile = null
 isPr = false
+isDeviceTests = false
 branchName = null
 gitHash = null
 packagePrefix = null
@@ -205,6 +206,9 @@ timestamps {
                         stage ('Checkout') {
                             currentStage = "${STAGE_NAME}"
                             echo ("Building on ${env.NODE_NAME}")
+                            isDeviceTests = (env.XAMARIN_MACIOS_HASH && !env.XAMARIN_MACIOS_HASH.empty ? true : false)
+                            sh ('env')
+                            echo ("isDeviceTests: ${isDeviceTests}")
                             scmVars = checkout scm
                             isPr = (env.CHANGE_ID && !env.CHANGE_ID.empty ? true : false)
                             branchName = env.BRANCH_NAME
@@ -343,6 +347,16 @@ timestamps {
                         }
 
                         dir ('xamarin-macios') {
+                            stage ('Launch tests on device') {
+                                build (job: "../macios-device-tests", parameters: [
+                                    string (name: "XAMARIN_MACIOS_HASH", value: "${gitHash}"),
+                                    string (name: "XI_PACKAGE", value: "${xiPackageUrl}"),
+                                    string (name: "XM_PACKAGE", value: "${xmPackageUrl}"),
+                                    string (name: "CONTINUOUS_INTEGRATION_URL", value: "${env.RUN_DISPLAY_URL}"),
+                                    string (name: "XAMARIN_MACIOS_BRANCH", value: "${branchName}")
+                                    ])
+                            }
+                            throw new Exception ("Skipping the rest for now")
                             stage ('Launch external tests') {
                                 currentStage = "${STAGE_NAME}"
                                 if (isPr) {
