@@ -189,7 +189,9 @@ def runXamarinMacTests (url, macOS)
 }
 
 timestamps {
-    node ('xamarin-macios && macos-10.13') {
+    isDeviceTests = (env.XAMARIN_MACIOS_DEVICE_TESTS && !env.XAMARIN_MACIOS_DEVICE_TESTS.empty ? true : false)
+    def nodeFilter = isDeviceTests ? "xamarin-macios-device-tests" : "xamarin-macios && macos-10.13"
+    node (nodeFilter) {
         try {
             timeout (time: 9, unit: 'HOURS') {
                 // Hard-code a workspace, since branch-based and PR-based
@@ -206,7 +208,6 @@ timestamps {
                         stage ('Checkout') {
                             currentStage = "${STAGE_NAME}"
                             echo ("Building on ${env.NODE_NAME}")
-                            isDeviceTests = (env.XAMARIN_MACIOS_HASH && !env.XAMARIN_MACIOS_HASH.empty ? true : false)
                             sh ('env')
                             echo ("isDeviceTests: ${isDeviceTests}")
                             if (isDeviceTests) {
@@ -356,6 +357,7 @@ timestamps {
                             dir ('xamarin-macios') {
                                 stage ('Launch tests on device') {
                                     build (job: "../macios-device-tests", wait: false, parameters: [
+                                        string (name: "XAMARIN_MACIOS_DEVICE_TESTS", value: "1"),
                                         string (name: "XAMARIN_MACIOS_HASH", value: "${gitHash}"),
                                         string (name: "XI_PACKAGE", value: "${xiPackageUrl}"),
                                         string (name: "XM_PACKAGE", value: "${xmPackageUrl}"),
