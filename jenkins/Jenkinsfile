@@ -213,7 +213,12 @@ timestamps {
                             if (isDeviceTests) {
                                 // the device test job takes the hash to checkout as a parameter,
                                 // so we need to checkout differently
-                                scmVars = checkout ([$class: 'GitSCM', branches: [[name: env.XAMARIN_MACIOS_HASH ]]])
+                                scmVars = checkout ([$class: 'GitSCM',
+                                    userRemoteConfigs: [[
+                                        url: "https://github.com/${repository}"
+                                    ]],
+                                    branches: [[name: env.XAMARIN_MACIOS_HASH ]]
+                                    ])
                             } else {
                                 scmVars = checkout scm
                             }
