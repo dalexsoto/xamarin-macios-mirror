@@ -367,7 +367,8 @@ timestamps {
                                         string (name: "XI_PACKAGE", value: "${xiPackageUrl}"),
                                         string (name: "XM_PACKAGE", value: "${xmPackageUrl}"),
                                         string (name: "CONTINUOUS_INTEGRATION_URL", value: "${env.RUN_DISPLAY_URL}"),
-                                        string (name: "XAMARIN_MACIOS_BRANCH", value: "${branchName}")
+                                        string (name: "ghprbPullId", value: "${env.ghprbPullId}"),
+                                        string (name: "BRANCH_NAME", value: "${branchName}")
                                         ])
                                 }
                                 throw new Exception ("Skipping the rest for now")
@@ -491,6 +492,7 @@ timestamps {
                             } // dir ("xamarin-macios")
                         } else {
                             stage ('Provisioning') {
+                                currentStage = "${STAGE_NAME}"
                                 // Download & install Xamarin.iOS
                                 sh (script: "curl -fL ${params.XI_PACKAGE} --output xamarin.ios.pkg")
                                 sh (script: "sudo installer -pkg xamarin.ios.pkg -target / -verbose -dumplog")
@@ -498,8 +500,10 @@ timestamps {
                                 sh (script: "${workspace}/xamarin-macios/system-dependencies.sh  --provision-xcode --provision-xamarin-studio --provision-mono --ignore-osx --ignore-autotools --ignore-cmake")
                             }
                             stage ('Run device tests') {
+                                currentStage = "${STAGE_NAME}"
                                 // The device tests can take a while...
                                 timeout (time: 36, unit: 'HOURS') {
+                                    reportPrefix = sh (script: "${workspace}/xamarin-macios/jenkins/publish-results.sh | grep '^Url Prefix: ' | sed 's/^Url Prefix: //'", returnStdout: true).trim ()
                                     echo ("Html report: ${reportPrefix}/tests/index.html")
                                     sh ("${workspace}/xamarin-macios/jenkins/run-tests.sh --target=vsts-device-tests --publish --keychain=xamarin-macios")
                                 }
