@@ -196,7 +196,7 @@ def getBuildTasksToolRedirect() {
     withCredentials ([string (credentialsId: 'macios_github_comment_token', variable: 'GITHUB_PAT_TOKEN')]) {
         def connection = "https://dl.internalx.com/build-tools/latest/Xamarin.Build.Tasks.nupkg".toURL().openConnection()
         connection.instanceFollowRedirects = false
-        connection.setRequestProperty("Authorization", "token ${GITHUB_PAT_TOKEN}")
+        connection.setRequestProperty("Authorization", "token ${env.GITHUB_PAT_TOKEN}")
         def response = connection.responseCode
         def content = connection.content.readLines()
         connection.disconnect()
