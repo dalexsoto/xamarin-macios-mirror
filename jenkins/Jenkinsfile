@@ -364,7 +364,8 @@ timestamps {
 
                         // Generate, Upload and Report artifacts.json
                         stage('report-artifacts') {
-                            withCredentials([string(credentialsId: 'artifacts-github-token', variable: 'GITHUB_AUTH_TOKEN'), usernamePassword(credentialsId: 'storage-account-and-container-name', passwordVariable: 'STORAGE_PASSWORD', usernameVariable: 'STORAGE_ACCOUNT')]) {
+                            currentStage = "${STAGE_NAME}"
+                            withCredentials([string(credentialsId: 'artifacts-github-token', variable: 'GITHUB_AUTH_TOKEN'), usernamePassword(credentialsId: 'storage-credential', passwordVariable: 'STORAGE_PASSWORD', usernameVariable: 'STORAGE_ACCOUNT')]) {
                                 dir("BuildTasks") {
                                     sh "mono tools/BuildTasks/build-tasks.exe artifacts -s ${env.WORKSPACE}/xamarin-macios -a ${env.STORAGE_ACCOUNT} -c ${env.STORAGE_PASSWORD} -t ${env.GITHUB_AUTH_TOKEN}"
                                 }
