@@ -311,8 +311,9 @@ timestamps {
 
                         // Download BuildTasks tool
                         stage('download-buildtasks-tool') {
+                            currentStage = "${STAGE_NAME}"
                             def redirect = getBuildTasksToolRedirect()
-                            sh "curl -o Xamarin.Build.Tasks.nupkg \"${redirect}\""
+                            sh "curl -s -o Xamarin.Build.Tasks.nupkg ${redirect}"
                             dir("BuildTasks") {
                                 deleteDir()
                                 sh "unzip ../Xamarin.Build.Tasks.nupkg"
@@ -321,6 +322,7 @@ timestamps {
 
                         // Create ci-checkout.json file in package dir
                         stage('ci-checkout') {
+                            currentStage = "${STAGE_NAME}"
                             dir("BuildTasks") {
                                 sh "mono tools/BuildTasks/build-tasks.exe workspaceinfo -p ${env.WORKSPACE} -o ${env.WORKSPACE}/package/ci-checkout.json"
                             }
@@ -359,7 +361,7 @@ timestamps {
                         stage('report-artifacts') {
                             withCredentials([usernamePassword(credentialsId: 'storage-credential', passwordVariable: 'STORAGE_PASSWORD', usernameVariable: 'STORAGE_ACCOUNT')]) {
                                 dir("BuildTasks") {
-                                    sh "mono tools/BuildTasks/build-tasks.exe artifacts -s ${env.WORKSPACE}/monodroid -a ${env.STORAGE_ACCOUNT} -c ${env.STORAGE_PASSWORD}"
+                                    sh "mono tools/BuildTasks/build-tasks.exe artifacts -s ${env.WORKSPACE}/xamarin-macios -a ${env.STORAGE_ACCOUNT} -c ${env.STORAGE_PASSWORD}"
                                 }
                             }
                         }
