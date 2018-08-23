@@ -335,7 +335,7 @@ timestamps {
 
                         stage ('Upload to Azure') {
                             currentStage = "${STAGE_NAME}"
-                            virtualPath = "${env.JOB_NAME}-${env.BUILD_NUM}"
+                            virtualPath = "${env.JOB_NAME}-${env.BUILD_NUMBER}"
                             packagePrefix = "${getStoragePrefixURL()}/${virtualPath}/package"
 
                             // Create manifest
