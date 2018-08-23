@@ -336,28 +336,30 @@ timestamps {
                         stage ('Upload to Azure') {
                             currentStage = "${STAGE_NAME}"
                             virtualPath = "${env.JOB_NAME}-${env.BUILD_NUMBER}"
-                            packagePrefix = "${getStoragePrefixURL()}/${virtualPath}/package"
+                            packagePrefix = "https://dl.internalx.com/${virtualPath}/package"
 
                             // Create manifest
                             def uploadingFiles = findFiles (glob: "package/*")
                             def manifest = ""
                             for (int i = 0; i < uploadingFiles.length; i++) {
                                 def file = uploadingFiles [i]
-                                manifest += "${packagePrefix}/${file.name}\n"
+                                manifest += "${virtualPath}/${file.name}\n"
                             }
 
-                            manifest += "${packagePrefix}/artifacts.json\n"
-                            manifest += "${packagePrefix}/manifest\n"
+                            manifest += "${virtualPath}/artifacts.json\n"
+                            manifest += "${virtualPath}/manifest\n"
                             writeFile (file: "package/manifest", text: manifest)
 
                             sh ("ls -la package")
-                            uploadFiles ("package/*", virtualPath)
+                            dir("package") {
+                                uploadFiles ("*", virtualPath)
 
-                            // Also upload manifest to a predictable url (without the build number)
-                            // This manifest will be overwritten in subsequent builds (for this [PR/branch]+hash combination)
-                            uploadFiles ("package/manifest", "jenkins/${branchName}/${gitHash}")
-                            // And also create a 'latest' version (which really means 'latest built', not 'latest hash', but it will hopefully be good enough)
-                            uploadFiles ("package/manifest", "jenkins/${branchName}/latest")
+                                // Also upload manifest to a predictable url (without the build number)
+                                // This manifest will be overwritten in subsequent builds (for this [PR/branch]+hash combination)
+                                uploadFiles ("manifest", "jenkins/${branchName}/${gitHash}")
+                                // And also create a 'latest' version (which really means 'latest built', not 'latest hash', but it will hopefully be good enough)
+                                uploadFiles ("manifest", "jenkins/${branchName}/latest")
+                            }
 
                             manifestFilename = "manifest"
                         }
