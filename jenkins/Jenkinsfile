@@ -313,7 +313,7 @@ timestamps {
                             withCredentials ([string (credentialsId: 'macios_github_comment_token', variable: 'GITHUB_PAT_TOKEN')]) {
                                 def redirect = getBuildTasksToolRedirect()
                                 echo "Retrieved redirect. Downloading to Xamarin.Build.Tasks"
-                                sh "curl -s -o Xamarin.Build.Tasks.nupkg ${redirect}"
+                                sh "curl -s -o Xamarin.Build.Tasks.nupkg \"${redirect}\""
                                 dir("BuildTasks") {
                                     deleteDir()
                                     sh "unzip ../Xamarin.Build.Tasks.nupkg"
