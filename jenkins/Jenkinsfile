@@ -323,9 +323,13 @@ timestamps {
 
                         // Create ci-checkout.json file in package dir
                         stage('ci-checkout') {
-                            currentStage = "${STAGE_NAME}"
-                            dir("BuildTasks") {
-                                sh "mono tools/BuildTasks/build-tasks.exe workspaceinfo -p ${env.WORKSPACE} -o ${env.WORKSPACE}/package/ci-checkout.json"
+                            try {
+                                currentStage = "${STAGE_NAME}"
+                                dir("BuildTasks") {
+                                    sh "mono tools/BuildTasks/build-tasks.exe workspaceinfo -p ${env.WORKSPACE} -o ${env.WORKSPACE}/package/ci-checkout.json"
+                                }
+                            } catch (ex) {
+                                echo ex.getMessage()
                             }
                         }
 
