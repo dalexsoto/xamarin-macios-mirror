@@ -193,18 +193,16 @@ def runXamarinMacTests (url, macOS)
 
 @NonCPS
 def getBuildTasksToolRedirect() {
-    withCredentials ([string (credentialsId: 'macios_github_comment_token', variable: 'GITHUB_PAT_TOKEN')]) {
-        def connection = "https://dl.internalx.com/build-tools/latest/Xamarin.Build.Tasks.nupkg".toURL().openConnection()
-        connection.instanceFollowRedirects = false
-        connection.setRequestProperty("Authorization", "token ${env.GITHUB_PAT_TOKEN}")
-        def response = connection.responseCode
-        def content = connection.content.readLines()
-        connection.disconnect()
-        if (response == 302) {
-            return connection.getHeaderField("Location")
-        } else {
-            throw new Exception("DL link failed ${response}:\n${content}")
-        }
+    def connection = "https://dl.internalx.com/build-tools/latest/Xamarin.Build.Tasks.nupkg".toURL().openConnection()
+    connection.instanceFollowRedirects = false
+    connection.setRequestProperty("Authorization", "token ${env.GITHUB_PAT_TOKEN}")
+    def response = connection.responseCode
+    def content = connection.content.readLines()
+    connection.disconnect()
+    if (response == 302) {
+        return connection.getHeaderField("Location")
+    } else {
+        throw new Exception("DL link failed ${response}:\n${content}")
     }
 }
 
@@ -312,11 +310,14 @@ timestamps {
                         // Download BuildTasks tool
                         stage('download-buildtasks-tool') {
                             currentStage = "${STAGE_NAME}"
-                            def redirect = getBuildTasksToolRedirect()
-                            sh "curl -s -o Xamarin.Build.Tasks.nupkg ${redirect}"
-                            dir("BuildTasks") {
-                                deleteDir()
-                                sh "unzip ../Xamarin.Build.Tasks.nupkg"
+                            withCredentials ([string (credentialsId: 'macios_github_comment_token', variable: 'GITHUB_PAT_TOKEN')]) {
+                                def redirect = getBuildTasksToolRedirect()
+                                echo "Retrieved redirect. Downloading to Xamarin.Build.Tasks"
+                                sh "curl -s -o Xamarin.Build.Tasks.nupkg ${redirect}"
+                                dir("BuildTasks") {
+                                    deleteDir()
+                                    sh "unzip ../Xamarin.Build.Tasks.nupkg"
+                                }
                             }
                         }
 
