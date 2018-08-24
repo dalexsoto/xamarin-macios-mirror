@@ -192,8 +192,8 @@ def runXamarinMacTests (url, macOS)
 }
 
 @NonCPS
-def getBuildTasksToolRedirect() {
-    def connection = "https://dl.internalx.com/build-tools/latest/Xamarin.Build.Tasks.nupkg".toURL().openConnection()
+def getDLRedirect(url) {
+    def connection = url.toURL().openConnection()
     connection.instanceFollowRedirects = false
     connection.setRequestProperty("Authorization", "token ${env.GITHUB_PAT_TOKEN}")
     def response = connection.responseCode
@@ -206,9 +206,9 @@ def getBuildTasksToolRedirect() {
     }
 }
 
-def getStoragePrefixURL() {
+def getDLPrefixURL() {
     withCredentials([usernamePassword(credentialsId: 'storage-account-and-container-name', passwordVariable: 'STORAGE_CONTAINER', usernameVariable: 'STORAGE_ACCOUNT')]) {
-        return "https://${env.STORAGE_ACCOUNT}.blob.core.windows.net/${env.STORAGE_CONTAINER}"
+        return "https://dl.internalx.com/${env.STORAGE_CONTAINER}"
     }
 }
 
@@ -311,7 +311,7 @@ timestamps {
                         stage('download-buildtasks-tool') {
                             currentStage = "${STAGE_NAME}"
                             withCredentials ([string (credentialsId: 'macios_github_comment_token', variable: 'GITHUB_PAT_TOKEN')]) {
-                                def redirect = getBuildTasksToolRedirect()
+                                def redirect = getDLRedirect("https://dl.internalx.com/build-tools/latest/Xamarin.Build.Tasks.nupkg")
                                 echo "Retrieved redirect. Downloading to Xamarin.Build.Tasks"
                                 sh "curl -s -o Xamarin.Build.Tasks.nupkg \"${redirect}\""
                                 dir("BuildTasks") {
@@ -336,18 +336,18 @@ timestamps {
                         stage ('Upload to Azure') {
                             currentStage = "${STAGE_NAME}"
                             virtualPath = "${env.JOB_NAME}-${env.BUILD_NUMBER}"
-                            packagePrefix = "https://dl.internalx.com/${virtualPath}/package"
+                            packagePrefix = "${getDLPrefixURL()}/${virtualPath}"
 
                             // Create manifest
                             def uploadingFiles = findFiles (glob: "package/*")
                             def manifest = ""
                             for (int i = 0; i < uploadingFiles.length; i++) {
                                 def file = uploadingFiles [i]
-                                manifest += "${virtualPath}/${file.name}\n"
+                                manifest += "${packagePrefix}/${file.name}\n"
                             }
 
-                            manifest += "${virtualPath}/artifacts.json\n"
-                            manifest += "${virtualPath}/manifest\n"
+                            manifest += "${packagePrefix}/artifacts.json\n"
+                            manifest += "${packagePrefix}/manifest\n"
                             writeFile (file: "package/manifest", text: manifest)
 
                             sh ("ls -la package")
@@ -473,7 +473,7 @@ timestamps {
                                     def builders = [:]
 
                                     // Add test runs on older macOS versions
-                                    def url = "${getStoragePrefixURL()}/${virtualPath}/tests/mac-test-package.zip"
+                                    def url = "${getDLPrefixURL()}/${virtualPath}/tests/mac-test-package.zip"
                                     def firstOS = sh (returnStdout: true, script: "grep ^MIN_OSX_SDK_VERSION= '${workspace}/xamarin-macios/Make.config' | sed 's/.*=//'").trim ().split ("\\.")[1].toInteger ()
                                     def lastOS = sh (returnStdout: true, script: "grep ^OSX_SDK_VERSION= '${workspace}/xamarin-macios/Make.config' | sed 's/.*=//'").trim ().split ("\\.")[1].toInteger ()
                                     for (os = firstOS; os < lastOS; os++) {
@@ -482,7 +482,9 @@ timestamps {
                                             try {
                                                 node ("xamarin-macios && macos-10.${macOS}") {
                                                     stage ("Running XM tests on '10.${macOS}'") {
-                                                        runXamarinMacTests (url, "macOS 10.${macOS}")
+                                                        withCredentials ([string (credentialsId: 'macios_github_comment_token', variable: 'GITHUB_PAT_TOKEN')]) {
+                                                            runXamarinMacTests (getDLRedirect(url), "macOS 10.${macOS}")
+                                                        }
                                                     }
                                                 }
                                             } catch (err) {
