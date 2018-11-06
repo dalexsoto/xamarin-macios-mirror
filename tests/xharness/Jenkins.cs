@@ -25,7 +25,6 @@ namespace xharness
 		public bool IncludeMac32 = true;
 		public bool IncludeiOS = true;
 		public bool IncludeiOSExtensions;
-		public bool ForceExtensionBuildOnly;
 		public bool BuildiOSExtensions;
 		public bool IncludetvOS = true;
 		public bool IncludewatchOS = true;
@@ -427,7 +426,6 @@ namespace xharness
 						TestName = project.Name,
 					};
 					buildToday.CloneTestProject (todayProject);
-					//rv.Add (new RunDeviceTask (buildToday, Devices.Connected64BitIOS) { Ignored = ignored || !IncludeiOSExtensions, BuildOnly = project.BuildOnly || ForceExtensionBuildOnly });
 					var ignoreExtension = ignored || !IncludeiOSExtensions;
 					if (buildToday.TestName == "fsharp")
 						ignoreExtension = true; // https://github.com/xamarin/xamarin-macios/issues/3684
@@ -513,9 +511,6 @@ namespace xharness
 
 		void DisableKnownFailingDeviceTests ()
 		{
-			// https://github.com/xamarin/maccore/issues/1008
-			ForceExtensionBuildOnly = true;
-
 			// https://github.com/xamarin/maccore/issues/1011
 			foreach (var mono in Harness.IOSTestProjects.Where (x => x.Name == "mini"))
 				mono.BuildOnly = true;
@@ -2371,7 +2366,6 @@ function toggleAll (show)
 		public string ProjectConfiguration;
 		public string ProjectPlatform;
 		public Dictionary<string, string> Environment = new Dictionary<string, string> ();
-		public bool BuildOnly;
 
 		public Func<Task> Dependency; // a task that's feteched and awaited before this task's ExecuteAsync method
 		public Task InitialTask; // a task that's executed before this task's ExecuteAsync method.
@@ -3861,12 +3855,6 @@ function toggleAll (show)
 
 			var executingTasks = new Queue<RunSimulatorTask> (GetExecutingTasks ());
 			RunSimulatorTask last_re_executed_task = null;
-
-			var executingTasks = Tasks.Where ((v) => !v.Ignored && !v.Failed);
-			if (!executingTasks.Any ()) {
-				ExecutionResult = TestExecutingResult.Failed;
-				return;
-			}
 
 			while (executingTasks.Count > 0) {
 				// First build everything. This is required for the run simulator
