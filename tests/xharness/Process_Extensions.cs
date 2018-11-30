@@ -121,10 +121,8 @@ namespace xharness
 			sb.Append ($"{StringUtils.Quote (process.StartInfo.FileName)} {process.StartInfo.Arguments}");
 			log.WriteLine (sb);
 
-			var watch = Stopwatch.StartNew ();
 			process.Start ();
 			var pid = process.Id;
-			Console.WriteLine ("{3} Executing '{0} {1}' with timeout {2} seconds", process.StartInfo.FileName, process.StartInfo.Arguments, timeout.HasValue ? timeout.Value.TotalSeconds.ToString () : "infinite", pid);
 
 			process.BeginErrorReadLine ();
 			process.BeginOutputReadLine ();
@@ -138,7 +136,6 @@ namespace xharness
 
 			if (timeout.HasValue) {
 				if (!await process.WaitForExitAsync (timeout.Value)) {
-					Console.WriteLine ("{2} Execution of '{0} {1}' timed out, will now kill.", process.StartInfo.FileName, process.StartInfo.Arguments, pid);
 					await process.KillTreeAsync (log, diagnostics ?? true);
 					rv.TimedOut = true;
 					lock (StderrStream)
@@ -146,8 +143,6 @@ namespace xharness
 				}
 			}
 			await process.WaitForExitAsync ();
-			watch.Stop ();
-			Console.WriteLine ("{2} Execution of '{0} {1}' succeeded in {3} ms.", process.StartInfo.FileName, process.StartInfo.Arguments, pid, watch.ElapsedMilliseconds);
 			Task.WaitAll (new Task [] { stderr_completion.Task, stdout_completion.Task }, TimeSpan.FromSeconds (1));
 
 			try {
@@ -202,7 +197,6 @@ namespace xharness
 			GetChildrenPS (log, pids, pid);
 			if (diagnostics == true) {
 				log.WriteLine ($"Pids to kill: {string.Join (", ", pids.Select ((v) => v.ToString ()).ToArray ())}");
-				Console.WriteLine ($"{pid} Pids to kill: {string.Join (", ", pids.Select ((v) => v.ToString ()).ToArray ())}");
 				using (var ps = new Process ()) {
 					log.WriteLine ("Writing process list:");
 					ps.StartInfo.FileName = "ps";
@@ -226,9 +220,6 @@ namespace xharness
 
 							log.WriteLine ($"Printing backtrace for pid={pid}");
 							await dbg.RunAsync (log, true, TimeSpan.FromSeconds (30), diagnostics: false);
-							Console.WriteLine ($"Printing backtrace for pid={pid}");
-							var rv = await dbg.RunAsync (log, true, TimeSpan.FromSeconds (30), diagnostics: false);
-							Console.WriteLine ($"Printed backtrace for pid={pid} (Succeeded: {rv.Succeeded} TimedOut: {rv.TimedOut}");
 						}
 					} finally {
 						try {
@@ -242,12 +233,10 @@ namespace xharness
 
 			// Send SIGABRT since that produces a crash report
 			// lldb may fail to attach to system processes, but crash reports will still be produced with potentially helpful stack traces.
-			Console.WriteLine ($"Sending SIGABRT to: {string.Join (", ", pids.Select ((v) => v.ToString ()).ToArray ())}");
 			for (int i = 0; i < pids.Count; i++)
 				ProcessHelper.kill (pids [i], 6);
 
 			// send kill -9 anyway as a last resort
-			Console.WriteLine ($"Sending SIGKILL to: {string.Join (", ", pids.Select ((v) => v.ToString ()).ToArray ())}");
 			for (int i = 0; i < pids.Count; i++)
 				ProcessHelper.kill (pids [i], 9);
 		}
@@ -261,14 +250,7 @@ namespace xharness
 				ps.StartInfo.Arguments = "-eo ppid,pid";
 				ps.StartInfo.UseShellExecute = false;
 				ps.StartInfo.RedirectStandardOutput = true;
-				try {
-					ps.Start ();
-				} catch (System.ComponentModel.Win32Exception we) {
-					Console.WriteLine ("{0} Failed to launch ps: {1}", Harness.Timestamp, we.Message);
-					Console.WriteLine ("{0} Will now wait for 20 minutes.", Harness.Timestamp);
-					Thread.Sleep (TimeSpan.FromMinutes (20));
-					throw;
-				}
+				ps.Start ();
 				stdout = ps.StandardOutput.ReadToEnd ();
 
 				if (!ps.WaitForExit (1000)) {
