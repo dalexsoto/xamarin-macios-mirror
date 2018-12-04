@@ -478,7 +478,7 @@ namespace Xamarin.Bundler {
 				if (EnableCoopGC.Value) {
 					MarshalObjectiveCExceptions = MarshalObjectiveCExceptionMode.ThrowManagedException;
 				} else {
-					MarshalObjectiveCExceptions = isSimulatorOrDesktopDebug ? MarshalObjectiveCExceptionMode.UnwindManagedCode : MarshalObjectiveCExceptionMode.Disable;
+					MarshalObjectiveCExceptions = MarshalObjectiveCExceptionMode.ThrowManagedException;
 				}
 			}
 
@@ -486,7 +486,7 @@ namespace Xamarin.Bundler {
 				if (EnableCoopGC.Value) {
 					MarshalManagedExceptions = MarshalManagedExceptionMode.ThrowObjectiveCException;
 				} else {
-					MarshalManagedExceptions = isSimulatorOrDesktopDebug ? MarshalManagedExceptionMode.UnwindNativeCode : MarshalManagedExceptionMode.Disable;
+					MarshalManagedExceptions = MarshalManagedExceptionMode.ThrowObjectiveCException;
 				}
 				IsDefaultMarshalManagedExceptionMode = true;
 			}
