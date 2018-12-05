@@ -23,17 +23,17 @@ namespace xharness
 		public bool IncludeBcl;
 		public bool IncludeMac = true;
 		public bool IncludeMac32 = true;
-		public bool IncludeiOS = true;
+		public bool IncludeiOS = false;
 		public bool IncludeiOSExtensions;
 		public bool BuildiOSExtensions;
-		public bool IncludetvOS = true;
-		public bool IncludewatchOS = true;
+		public bool IncludetvOS = false;
+		public bool IncludewatchOS = false;
 		public bool IncludeMmpTest;
-		public bool IncludeiOSMSBuild = true;
+		public bool IncludeiOSMSBuild = false;
 		public bool IncludeMtouch;
 		public bool IncludeBtouch;
 		public bool IncludeMacBindingProject;
-		public bool IncludeSimulator = true;
+		public bool IncludeSimulator = false;
 		public bool IncludeDevice;
 		public bool IncludeXtro;
 
