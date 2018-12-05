@@ -1237,6 +1237,7 @@ namespace Xamarin.Bundler {
 				case SymbolMode.Ignore:
 					break;
 				case SymbolMode.Code:
+				case SymbolMode.Default:
 					string reference_m = Path.Combine (App.Cache.Location, "reference.m");
 					reference_m = BuildTarget.GenerateReferencingSource (reference_m, requiredSymbols);
 					if (!string.IsNullOrEmpty (reference_m))
@@ -1244,7 +1245,6 @@ namespace Xamarin.Bundler {
 					args.Append ("-lc++ ");
 					break;
 				case SymbolMode.Linker:
-				case SymbolMode.Default:
 					foreach (var symbol in requiredSymbols)
 						args.Append ("-u ").Append (StringUtils.Quote (symbol.Prefix + symbol.Name)).Append (' ');
 					break;
