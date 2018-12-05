@@ -88,6 +88,7 @@ namespace MonoTouchFixtures.ObjCRuntime {
 
 		// Simulator/desktop only (except for watchOS, where it works everywhere)
 		[Test]
+		[Ignore]
 		public void ObjCException ()
 		{
 #if !__WATCHOS__ && !__MACOS__
@@ -133,6 +134,7 @@ namespace MonoTouchFixtures.ObjCRuntime {
 
 		// Simulator/desktop only test (except for watchOS, where it works everywhere)
 		[Test]
+		[Ignore]
 		public void ManagedExceptionPassthrough ()
 		{
 			Exception thrownException = null;
