@@ -23,10 +23,10 @@ function toggleLogVisibility (logName)
 		button.innerText = '+';
 	}
 }
-function toggleContainerVisibility (containerName)
+function toggleContainerVisibility2 (containerName)
 {
-	var button = document.getElementById ('expander_' + containerName);
-	var div = document.getElementById ('test_container_' + containerName);
+	var button = document.getElementById ('button_container2_' + containerName);
+	var div = document.getElementById ('test_container2_' + containerName);
 	if (div.style.display == 'none') {
 		div.style.display = 'block';
 		button.innerText = '-';
@@ -62,10 +62,10 @@ function toggleAjaxLogVisibility()
 function toggleVisibility (css_class)
 {
 	var objs = document.getElementsByClassName (css_class);
-
+	
 	for (var i = 0; i < objs.length; i++) {
 		var obj = objs [i];
-
+		
 		var pname = 'original-' + css_class + '-display';
 		if (obj.hasOwnProperty (pname)) {
 			obj.style.display = obj [pname];
@@ -93,6 +93,10 @@ function runtest(id)
 {
 	sendrequest ("runtest?id=" + id);
 }
+function stoptest(id)
+{
+	sendrequest ("stoptest?id=" + id);
+}
 function sendrequest(url, callback)
 {
 	var xhttp = new XMLHttpRequest();
@@ -107,16 +111,6 @@ function sendrequest(url, callback)
 	xhttp.send();
 	addlog ("Loading url: " + url);
 }
-
-function replaceContents (existing_obj, new_obj)
-{
-	if (existing_obj.innerHTML != new_obj.innerHTML)
-		existing_obj.innerHTML = new_obj.innerHTML;
-	if (existing_obj.style.cssText != new_obj.style.cssText) {
-		// existing_obj.style = new_obj.style;
-	}
-}
-
 function autorefresh()
 {
 	var xhttp = new XMLHttpRequest();
@@ -133,48 +127,21 @@ function autorefresh()
 					console.log ("Found object without id");
 					continue;
 				}
-c
+				
 				var new_obj = r.getElementById (ar_obj.id);
 				if (new_obj) {
+					if (ar_obj.innerHTML != new_obj.innerHTML)
+						ar_obj.innerHTML = new_obj.innerHTML;
+					if (ar_obj.style.cssText != new_obj.style.cssText) {
+						ar_obj.style = new_obj.style;
+					}
+					
 					var evt = ar_obj.getAttribute ('data-onautorefresh');
-
-					if (evt != '' && evt != null) {
-						var children = new_obj.getElementsByClassName ("appendable");
-						for (var c = 0; c < children.length; c++) {
-							var newChild = children [c];
-							var child = document.getElementById (newChild.id);
-							if (child == null) {
-								console.log ("new object!");
-								ar_obj.appendChild (newChild);
-							} else {
-								replaceContents (child, newChild);
-								switch (child.tagName) {
-								case "SPAN":
-									if (newChild.style.display != "none" && child.style.display == "none")
-										child.style.display = "inline";
-									var expander = document.getElementById (child.id.replace ("testrun_header_", "expander_"));
-									var container = document.getElementById (child.id.replace ("testrun_header_", "test_container_"));
-									if (expander != null && container != null)
-										expander.innerText = container.style.display == "none" ? "+" : "-";
-									break;
-								case "DIV":
-									if (newChild.style.marginLeft != '')
-										child.style.marginLeft = newChild.style.marginLeft;
-									if (newChild.classList.contains ("logs") && !child.classList.contains ("logs"))
-										child.classList.add ("logs");
-									if (newChild.classList.contains ("togglable") && !child.classList.contains ("togglable"))
-										child.classList.add ("togglable");
-									break;
-								}
-							}
-
-						}
+					if (evt != '') {
 						autoshowdetailsmessage (evt);
-					} else {
-						replaceContents (ar_obj, new_obj);
 					}
 				} else {
-					// console.log ("Could not find id " + ar_obj.id + " in updated page.");
+					console.log ("Could not find id " + ar_obj.id + " in updated page.");
 				}
 			}
 			setTimeout (autorefresh, 1000);
@@ -186,7 +153,6 @@ c
 
 function autoshowdetailsmessage (id)
 {
-	return;
 	var input_id = 'logs_' + id;
 	var message_id = 'button_' + id;
 	var input_div = document.getElementById (input_id);
@@ -227,7 +193,7 @@ function toggleAll (show)
 			div.textContent = value;
 		counter++;
 	}
-
+	
 	var togglable = document.getElementsByClassName ('togglable');
 	counter = 0;
 	value = show ? 'block' : 'none';
