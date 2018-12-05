@@ -1241,6 +1241,7 @@ namespace Xamarin.Bundler {
 					reference_m = BuildTarget.GenerateReferencingSource (reference_m, requiredSymbols);
 					if (!string.IsNullOrEmpty (reference_m))
 						args.Append (StringUtils.Quote (reference_m)).Append (' ');
+					args.Append ("-lc++ ");
 					break;
 				case SymbolMode.Linker:
 				case SymbolMode.Default:
