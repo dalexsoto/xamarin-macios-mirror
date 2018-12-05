@@ -495,7 +495,7 @@ namespace Xamarin.Bundler {
 #if MONOTOUCH
 				SymbolMode = EnableBitCode ? SymbolMode.Code : SymbolMode.Linker;
 #else
-				SymbolMode = SymbolMode.Linker;
+				SymbolMode = SymbolMode.Code;
 #endif
 			}
 
