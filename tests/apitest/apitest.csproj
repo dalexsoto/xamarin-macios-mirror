@@ -26,7 +26,6 @@
     <EnablePackageSigning>false</EnablePackageSigning>
     <IncludeMonoRuntime>false</IncludeMonoRuntime>
     <UseSGen>false</UseSGen>
-    <LinkMode>SdkOnly</LinkMode>
     <PlatformTarget>x86</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
