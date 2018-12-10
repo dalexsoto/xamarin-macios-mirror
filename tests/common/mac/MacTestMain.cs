@@ -5,9 +5,11 @@ using System.Security.Cryptography;
 #if XAMCORE_2_0 || __UNIFIED__
 using AppKit;
 using Foundation;
+using ObjCRuntime;
 #else
 using MonoMac.AppKit;
 using MonoMac.Foundation;
+using MonoMac.ObjCRuntime;
 #endif
 using GuiUnit;
 using NUnit.Framework;
@@ -22,12 +24,11 @@ namespace Xamarin.Mac.Tests
 	static class MainClass
 	{
 		static void Main (string[] args)
-		{
-			ObjCRuntime.Runtime.MarshalManagedException += (object sender, ObjCRuntime.MarshalManagedExceptionEventArgs ea) =>
+		{Runtime.MarshalManagedException += (object sender, MarshalManagedExceptionEventArgs ea) =>
 			{
 				Console.WriteLine ("Managed exception: {0}", ea.Exception);
 			};
-			ObjCRuntime.Runtime.MarshalObjectiveCException += (object sender, ObjCRuntime.MarshalObjectiveCExceptionEventArgs ea) =>
+			Runtime.MarshalObjectiveCException += (object sender, MarshalObjectiveCExceptionEventArgs ea) =>
 			{
 				Console.WriteLine ("Objective-C exception: {0}", ea.Exception);
 			};
