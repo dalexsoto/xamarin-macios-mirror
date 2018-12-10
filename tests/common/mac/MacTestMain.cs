@@ -23,6 +23,14 @@ namespace Xamarin.Mac.Tests
 	{
 		static void Main (string[] args)
 		{
+			ObjCRuntime.Runtime.MarshalManagedException += (object sender, ObjCRuntime.MarshalManagedExceptionEventArgs ea) =>
+			{
+				Console.WriteLine ("Managed exception: {0}", ea.Exception);
+			};
+			ObjCRuntime.Runtime.MarshalObjectiveCException += (object sender, ObjCRuntime.MarshalObjectiveCExceptionEventArgs ea) =>
+			{
+				Console.WriteLine ("Objective-C exception: {0}", ea.Exception);
+			};
 #if !NO_GUI_TESTING
 			NSApplication.Init();
 #endif
