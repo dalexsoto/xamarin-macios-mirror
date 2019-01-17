@@ -1414,7 +1414,7 @@ build-llvm64: .stamp-build-llvm .stamp-build-llvm32
 	$(Q) touch $@
 
 .stamp-build-llvm32: $(SDK_CONFIG)
-	$(MAKE) -C $(SDK_BUILDDIR) provision-llvm36-llvm32 $(SDK32_ARGS)
+	$(MAKE) -C $(SDK_BUILDDIR) provision-llvm36-llvm32 $(SDK_ARGS)
 	$(Q) touch $@
 
 clean-llvm: $(SDK_CONFIG)
