@@ -235,6 +235,9 @@ GENERATOR_DIFF_FILE="$OUTPUT_DIR/generator-diff/index.html"
 git diff --no-index build build-new > "$OUTPUT_DIR/generator-diff/generator.diff" || true
 "$TMPDIR/diff-to-html" "$OUTPUT_DIR/generator-diff/generator.diff" "$GENERATOR_DIFF_FILE"
 
+# force failure
+touch "$ROOT_DIR/src/Makefile"
+
 # Check if any files in the normal output paths were modified (there should be none)
 MODIFIED_FILES=$(find \
 	"$ROOT_DIR/_ios-build" \
