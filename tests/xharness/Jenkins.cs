@@ -825,7 +825,7 @@ namespace xharness
 				Timeout = TimeSpan.FromMinutes (120),
 				Ignored = !IncludeMtouch,
 				InProcess = true,
-				Workers = 2,
+				Workers = 1,
 			};
 			Tasks.Add (nunitExecutionMTouch);
 
