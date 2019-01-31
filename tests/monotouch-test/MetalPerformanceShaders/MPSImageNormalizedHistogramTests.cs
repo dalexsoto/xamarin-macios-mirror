@@ -38,7 +38,7 @@ namespace MonoTouchFixtures.MetalPerformanceShaders {
 		public void Constructors ()
 		{
 			var info = new MPSImageHistogramInfo { NumberOfHistogramEntries = 256 };
-			using (var obj = new MPSImageNormalizedHistogram (MTLDevice.SystemDefault, ref info)) {
+			using (var obj = new MPSImageNormalizedHistogram (device, ref info)) {
 				var rv = obj.HistogramInfo;
 				Asserts.AreEqual (info, rv, "HistogramInfo");
 
