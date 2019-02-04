@@ -31,8 +31,9 @@ namespace MonoTouchFixtures {
 			 * MONO_NEVER_INLINE, so they should show up in the backtrace
 			 * reliably */
 			bool interp = symbols [1].Contains ("ves_pinvoke_method") || symbols [1].Contains ("do_icall");
+			bool llvmonly = symbols [1].Contains ("mono_llvmonly_runtime_invoke"); // LLVM inlines the Collect function, so 'Collect' doesn't show up in the stack trace :/
 
-			Assert.IsTrue (aot || interp, "#1");
+			Assert.IsTrue (aot || interp || llvmonly, $"#1\n\t{string.Join ("\n\t", symbols)}");
 		}
 
 		void Collect ()
