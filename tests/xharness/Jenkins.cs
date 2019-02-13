@@ -2509,6 +2509,8 @@ namespace xharness
 					return TestExecutingResult.Failed;
 				}
 			}
+			
+			LogEvent (log, "Restoring nugets completed for {0} ({1}) on path {2}", TestName, Mode, projectPath);
 			return TestExecutingResult.Succeeded;
 		}
 		
