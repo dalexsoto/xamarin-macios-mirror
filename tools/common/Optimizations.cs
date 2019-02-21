@@ -205,10 +205,10 @@ namespace Xamarin.Bundler
 #endif
 			}
 
-			// We will register protocols if the static registrar is enabled
+			// We will register protocols if the static registrar is enabled and loading assemblies is not possible
 			if (!RegisterProtocols.HasValue) {
 #if MONOTOUCH
-				RegisterProtocols = app.Registrar == RegistrarMode.Static;
+				RegisterProtocols = (app.Registrar == RegistrarMode.Static) && !app.UseInterpreter;
 #else
 				RegisterProtocols = false;
 #endif
