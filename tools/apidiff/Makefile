@@ -190,10 +190,9 @@ IOS_REPL_ASSEMBLIES = $(foreach file,$(MONO_REPL_ASSEMBLIES),Xamarin.iOS/repl/$(
 IOS_REPL_REFS = $(foreach file,$(IOS_REPL_ASSEMBLIES),$(APIDIFF_DIR)/temp/xi-intr/$(file).xml)
 
 $(APIDIFF_DIR)/temp/xi-intr/%.xml: $(IOS_DESTDIR)$(MONOTOUCH_PREFIX)/lib/mono/%.dll $(MONO_API_INFO)
-	$(Q) mkdir -p $(dir $@) $(dir $(APIDIFF_DIR)/temp/xi-intr/$*)
+	$(Q) mkdir -p $(dir $(APIDIFF_DIR)/temp/xi-intr/$*) $(APIDIFF_DIR)/diff/xi-intr/
 	$(QF_GEN) mono --debug $(MONO_API_INFO) $< -o $(APIDIFF_DIR)/temp/xi-intr/$*.xml
-	$(Q) mkdir -p $(APIDIFF_DIR)/diff/xi-intr/
-	$(QF_GEN) $(MONO_BUILD) --debug $(MONO_API_HTML) $(APIDIFF_DIR)/references/xi/Xamarin.iOS/$(notdir $*).xml $(APIDIFF_DIR)/temp/xi-intr/$*.xml $(APIDIFF_DIR)/diff/xi-intr/$(notdir $*).html
+	$(QF_GEN) $(MONO_BUILD) --debug $(MONO_API_HTML) $(APIDIFF_DIR)/temp/xi/Xamarin.iOS/$(notdir $*).xml $(APIDIFF_DIR)/temp/xi-intr/$*.xml $(APIDIFF_DIR)/diff/xi-intr/$(notdir $*).html
 
 intr: all $(IOS_REPL_REFS)
 
