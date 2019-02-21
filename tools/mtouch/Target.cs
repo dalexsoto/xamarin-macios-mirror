@@ -542,7 +542,6 @@ namespace Xamarin.Bundler
 				DumpDependencies = App.LinkerDumpDependencies,
 				RuntimeOptions = App.RuntimeOptions,
 				MarshalNativeExceptionsState = MarshalNativeExceptionsState,
-				UseInterpreter = App.UseInterpreter,
 				Target = this,
 			};
 
