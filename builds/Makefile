@@ -1526,7 +1526,7 @@ build:: build-$(1)
 install-local:: install-$(1)
 clean-local:: clean-$(1)
 
-.stamp-compile-$(1): .stamp-build-llvm64 .stamp-build-llvm32 $(MONO_PATH)/configure $(MONO_PATH)/tools/offsets-tool/MonoAotOffsetsDumper.exe $(MONO_DEPENDENCIES) $(SDK_CONFIG)
+.stamp-compile-$(1): .stamp-build-llvm .stamp-build-llvm32 $(MONO_PATH)/configure $(MONO_PATH)/tools/offsets-tool/MonoAotOffsetsDumper.exe $(MONO_DEPENDENCIES) $(SDK_CONFIG)
 	$(MAKE) -C $(MONO_SDK_BUILDDIR) package-ios-$(1) $(SDK_ARGS) $(if $(5), XCODE_DIR=$(5))
 	$(Q) touch $$@
 
