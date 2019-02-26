@@ -1530,7 +1530,7 @@ clean-local:: clean-$(1)
 	$(MAKE) -C $(MONO_SDK_BUILDDIR) package-ios-$(1) $(SDK_ARGS) $(if $(5), XCODE_DIR=$(5))
 	$(Q) touch $$@
 
-.stamp-build-$(1): .stamp-$(MONO_BUILD_MODE)-$(1)
+.stamp-build-$(1): .stamp-compile-$(1)
 
 build-$(1): .stamp-build-$(1)
 
