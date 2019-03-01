@@ -12,12 +12,25 @@ using System.Text;
 using NUnit.Framework;
 
 using Xamarin;
+using Xamarin.Utils;
 
 namespace Xamarin.Tests
 {
 	[TestFixture]
 	public class ProductTests
 	{
+		[Test]
+		public void DebugSymbolVerification ()
+		{
+			var dsyms = Directory.GetDirectories (Configuration.SdkRootXI, "*.dSYM", SearchOption.AllDirectories).Where ((v) => !v.Contains ("mlaunch.dSYM"));
+			Assert.GreaterOrEqual (dsyms.Count (), 15, "Length");
+			foreach (var dsym in dsyms) {
+				var import = ExecutionHelper.Execute ("mdimport", $"-d 4 {StringUtils.Quote (dsym)}");
+				Assert.That (import, Does.Contain ("com_apple_xcode_dsym_paths"), "com_apple_xcode_dsym_paths");
+				Assert.That (import, Does.Contain ("com_apple_xcode_dsym_uuids"), "com_apple_xcode_dsym_uuids");
+			}
+		}
+
 		[Test]
 		public void MonoVersion ()
 		{
