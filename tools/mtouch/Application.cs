@@ -1405,8 +1405,12 @@ namespace Xamarin.Bundler {
 			if (EnableBitCode && IsSimulatorBuild)
 				throw ErrorHelper.CreateError (84, "Bitcode is not supported in the simulator. Do not pass --bitcode when building for the simulator.");
 
-			if (UseInterpreter && IsSimulatorBuild)
-				throw ErrorHelper.CreateError (141, "The interpreter is not supported in the simulator. Do not pass --interpreter when building for the simulator.");
+			// it's confusing to use different options to get a feature to work (e.g. dynamic, SRE...) on both simulator and device
+			if (UseInterpreter && IsSimulatorBuild) {
+				ErrorHelper.Show (ErrorHelper.CreateWarning (141, "The interpreter is not supported in the simulator. Switching to REPL which provide the same extra features on the simulator."));
+				EnableRepl = true;
+				UseInterpreter = false;
+			}
 
 			Namespaces.Initialize ();
 

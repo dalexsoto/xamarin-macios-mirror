@@ -1061,7 +1061,7 @@ namespace Xamarin.Bundler
 			{ "abi=", "Comma-separated list of ABIs to target. Currently supported: armv7, armv7+llvm, armv7+llvm+thumb2, armv7s, armv7s+llvm, armv7s+llvm+thumb2, arm64, arm64+llvm, i386, x86_64", v => app.ParseAbi (v) },
 			{ "override-abi=", "Override any previous abi. Only used for testing.", v => { app.ClearAbi (); app.ParseAbi (v); }, true }, // Temporary command line arg until XS has better support for 64bit architectures.
 			{ "cxx", "Enable C++ support", v => { app.EnableCxx = true; }},
-			{ "enable-repl:", "Enable REPL support (simulator and not linking only)", v => { app.EnableRepl = ParseBool (v, "enable-repl"); }, true /* this is a hidden option until we've actually used it and made sure it works as expected */ },
+			{ "enable-repl:", "Enable REPL support. For simulator only and disabling linking is recommanded.", v => { app.EnableRepl = ParseBool (v, "enable-repl"); } },
 			{ "pie:", "Enable (default) or disable PIE (Position Independent Executable).", v => { app.EnablePie = ParseBool (v, "pie"); }},
 			{ "compiler=", "Specify the Objective-C compiler to use (valid values are gcc, g++, clang, clang++ or the full path to a GCC-compatible compiler).", v => { app.Compiler = v; }},
 			{ "fastdev", "Build an app that supports fastdev (this app will only work when launched using Xamarin Studio)", v => { app.AddAssemblyBuildTarget ("@all=dynamiclibrary"); }},
