@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -268,18 +269,11 @@ namespace xharness
 				"System",
 				"System.Core",
 				"System.Data",
-				"System.Net.Http",
-				"System.Numerics",
 				"System.Runtime.Serialization",
 				"System.Transactions", "System.Web.Services",
 				"System.Xml",
-				"System.Xml.Linq",
-				"Mono.Security",
-				"System.ComponentModel.DataAnnotations",
-				"System.Json",
 				"System.ServiceModel.Web",
 				"Mono.Data.Sqlite",
-				"Mono.Data.Tds",
 				"System.IO.Compression",
 				"System.IO.Compression.FileSystem",
 				"Mono.CSharp",
@@ -311,33 +305,18 @@ namespace xharness
 			var fsharp_library_projects = new string [] { "fsharplibrary" };
 			var bcl_suites = new string [] {
 				"mscorlib",
-				"System",
-				"System.Core",
 				"System.Data",
 				"System.Net.Http",
-				"System.Numerics",
-				"System.Runtime.Serialization",
-				"System.Transactions",
 				"System.Web.Services",
 				"System.Xml",
-				"System.Xml.Linq",
-				"Mono.Security",
-				"System.ComponentModel.DataAnnotations",
-				"System.Json",
-				"System.ServiceModel.Web",
 				"Mono.Data.Sqlite",
-				"Mono.Data.Tds",
 				"System.IO.Compression",
 				"System.IO.Compression.FileSystem",
-				"Mono.CSharp",
-				"System.Security",
 				"System.ServiceModel",
 				"System.IdentityModel",
 			};
 			var bcl_skip_watchos = new string [] {
-				"Mono.Security",
 				"Mono.Data.Tds",
-				"Mono.CSharp",
 			};
 			IOSTestProjects.Add (new iOSTestProject (Path.GetFullPath (Path.Combine (RootDirectory, "bcl-test/mscorlib/mscorlib-0.csproj")), false));
 			IOSTestProjects.Add (new iOSTestProject (Path.GetFullPath (Path.Combine (RootDirectory, "bcl-test/mscorlib/mscorlib-1.csproj")), false));
@@ -772,10 +751,17 @@ namespace xharness
 		// Nothing really breaks when the sequence isn't identical from run to run, so
 		// this is just a best minimal effort.
 		static Random guid_generator = new Random (unchecked ((int) 0xdeadf00d));
-		public Guid NewStableGuid ()
+		public Guid NewStableGuid (string seed = null)
 		{
 			var bytes = new byte [16];
-			guid_generator.NextBytes (bytes);
+			if (seed == null) {
+				guid_generator.NextBytes (bytes);
+			} else {
+				using (var provider = MD5.Create ()) {
+					var inputBytes = Encoding.UTF8.GetBytes (seed);
+					bytes = provider.ComputeHash (inputBytes);
+				}
+			}
 			return new Guid (bytes);
 		}
 

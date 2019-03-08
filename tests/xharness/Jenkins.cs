@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Text;
 using Xamarin;
 using Xamarin.Utils;
+using System.Xml;
 
 namespace xharness
 {
@@ -1799,7 +1800,7 @@ namespace xharness
 							writer.WriteLine ($"<div id='logs_{log_id}' class='autorefreshable logs togglable' data-onautorefresh='{log_id}' style='display: {defaultDisplay};'>");
 
 							if (!string.IsNullOrEmpty (test.FailureMessage)) {
-								var msg = System.Web.HttpUtility.HtmlEncode (test.FailureMessage).Replace ("\n", "<br />");
+								var msg = HtmlFormat (test.FailureMessage);
 								var prefix = test.Ignored ? "Ignored" : "Failure";
 								if (test.FailureMessage.Contains ('\n')) {
 									writer.WriteLine ($"{prefix}:<br /> <div style='margin-left: 20px;'>{msg}</div>");
@@ -1879,13 +1880,13 @@ namespace xharness
 											if (fails.Count > 0) {
 												writer.WriteLine ("<div style='padding-left: 15px;'>");
 												foreach (var fail in fails)
-													writer.WriteLine ("{0} <br />", System.Web.HttpUtility.HtmlEncode (fail));
+													writer.WriteLine ("{0} <br />", HtmlFormat (fail));
 												writer.WriteLine ("</div>");
 											}
 											if (!string.IsNullOrEmpty (summary))
 												writer.WriteLine ("<span style='padding-left: 15px;'>{0}</span><br />", summary);
 										} catch (Exception ex) {
-											writer.WriteLine ("<span style='padding-left: 15px;'>Could not parse log file: {0}</span><br />", System.Web.HttpUtility.HtmlEncode (ex.Message));
+											writer.WriteLine ("<span style='padding-left: 15px;'>Could not parse log file: {0}</span><br />", HtmlFormat (ex.Message));
 										}
 									} else if (log.Description == "Build log") {
 										HashSet<string> errors;
@@ -1912,11 +1913,11 @@ namespace xharness
 											if (errors.Count > 0) {
 												writer.WriteLine ("<div style='padding-left: 15px;'>");
 												foreach (var error in errors)
-													writer.WriteLine ("{0} <br />", System.Web.HttpUtility.HtmlEncode (error));
+													writer.WriteLine ("{0} <br />", HtmlFormat (error));
 												writer.WriteLine ("</div>");
 											}
 										} catch (Exception ex) {
-											writer.WriteLine ("<span style='padding-left: 15px;'>Could not parse log file: {0}</span><br />", System.Web.HttpUtility.HtmlEncode (ex.Message));
+											writer.WriteLine ("<span style='padding-left: 15px;'>Could not parse log file: {0}</span><br />", HtmlFormat (ex.Message));
 										}
 									} else if (log.Description == "NUnit results" || log.Description == "XML log") {
 										try {
@@ -1931,7 +1932,7 @@ namespace xharness
 														writer.WriteLine ("<li>");
 														var test_name = failure.Attributes ["name"]?.Value;
 														var message = failure.SelectSingleNode ("failure/message")?.InnerText;
-														writer.Write (System.Web.HttpUtility.HtmlEncode (test_name));
+														writer.Write (HtmlFormat (test_name));
 														if (!string.IsNullOrEmpty (message)) {
 															writer.Write (": ");
 															writer.Write (HtmlFormat (message));
@@ -2501,7 +2502,7 @@ namespace xharness
 
 		public bool RestoreNugets {
 			get {
-				return !string.IsNullOrEmpty (SolutionPath);
+				return TestProject.RestoreNugetsInProject || !string.IsNullOrEmpty (SolutionPath);
 			}
 		}
 
@@ -2511,36 +2512,82 @@ namespace xharness
 			}
 		}
 
-		// This method must be called with the desktop resource acquired
-		// (which is why it takes an IAcquiredResources as a parameter without using it in the function itself).
-		protected async Task RestoreNugetsAsync (Log log, IAcquiredResource resource)
+		async Task<TestExecutingResult> RestoreNugetsAsync (string projectPath, Log log, bool useXIBuild=false)
 		{
-			if (!RestoreNugets)
-				return;
-
-			if (!File.Exists (SolutionPath))
-				throw new FileNotFoundException ("Could not find the solution whose nugets to restore.", SolutionPath);
+			// we do not want to use xibuild on solutions, we will have some failures with Mac Full
+			var isSolution = projectPath.EndsWith (".sln", StringComparison.Ordinal);
+			if (!File.Exists (projectPath))
+				throw new FileNotFoundException ("Could not find the solution whose nugets to restore.", projectPath);
 
 			using (var nuget = new Process ()) {
-				nuget.StartInfo.FileName = "/Library/Frameworks/Mono.framework/Versions/Current/Commands/nuget";
+				nuget.StartInfo.FileName = useXIBuild && !isSolution? Harness.XIBuildPath : 
+					"/Library/Frameworks/Mono.framework/Versions/Current/Commands/nuget";
 				var args = new StringBuilder ();
-				args.Append ("restore ");
-				args.Append (StringUtils.Quote (SolutionPath));
+				args.Append ((useXIBuild && !isSolution? "/" : "") + "restore "); // diff param depending on the tool
+				args.Append (StringUtils.Quote (projectPath));
+				if (useXIBuild && !isSolution)
+					args.Append (" /verbosity:detailed ");
+				else
+					args.Append (" -verbosity detailed ");
 				nuget.StartInfo.Arguments = args.ToString ();
 				SetEnvironmentVariables (nuget);
-				LogEvent (log, "Restoring nugets for {0} ({1})", TestName, Mode);
+				LogEvent (log, "Restoring nugets for {0} ({1}) on path {2}", TestName, Mode, projectPath);
 
 				var timeout = TimeSpan.FromMinutes (15);
 				var result = await nuget.RunAsync (log, true, timeout);
 				if (result.TimedOut) {
-					ExecutionResult = TestExecutingResult.TimedOut;
 					log.WriteLine ("Nuget restore timed out after {0} seconds.", timeout.TotalSeconds);
-					return;
+					return TestExecutingResult.TimedOut;
 				} else if (!result.Succeeded) {
-					ExecutionResult = TestExecutingResult.Failed;
-					return;
+					return TestExecutingResult.Failed;
 				}
 			}
+			
+			LogEvent (log, "Restoring nugets completed for {0} ({1}) on path {2}", TestName, Mode, projectPath);
+			return TestExecutingResult.Succeeded;
+		}
+		
+		List<string> GetNestedReferenceProjects (string csproj)
+		{
+			if (!File.Exists (csproj))
+				throw new FileNotFoundException ("Could not find the project whose reference projects needed to be found.", csproj);
+			var result = new List<string> ();
+			var doc = new XmlDocument ();
+			doc.Load (csproj.Replace ("\\", "/"));
+			foreach (var referenceProject in doc.GetProjectReferences ()) {
+				var fixPath = referenceProject.Replace ("\\", "/"); // do the replace in case we use win paths
+				result.Add (fixPath);
+				// get all possible references
+				result.AddRange (GetNestedReferenceProjects (fixPath));
+			}
+			return result;
+		}
+
+		// This method must be called with the desktop resource acquired
+		// (which is why it takes an IAcquiredResources as a parameter without using it in the function itself).
+		protected async Task RestoreNugetsAsync (Log log, IAcquiredResource resource, bool useXIBuild=false)
+		{
+			if (!RestoreNugets)
+				return;
+
+			if (!File.Exists (SolutionPath ?? TestProject.Path))
+				throw new FileNotFoundException ("Could not find the solution whose nugets to restore.", SolutionPath ?? TestProject.Path);
+				
+			// might happen that the project does contain reference projects with nugets, grab the reference projects and ensure
+			// thast they have the nugets restored (usually, watch os test projects
+			if (SolutionPath == null) {
+				var references = GetNestedReferenceProjects (TestProject.Path);
+				foreach (var referenceProject in references) {
+					var execResult = await RestoreNugetsAsync (referenceProject, log, useXIBuild); // do the replace in case we use win paths
+					if (execResult == TestExecutingResult.TimedOut) {
+						ExecutionResult = execResult;
+						return;
+					}
+				}
+			}
+
+			// restore for the main project/solution]
+			ExecutionResult = await RestoreNugetsAsync (SolutionPath ?? TestProject.Path, log, useXIBuild);
 		}
 	}
 
@@ -2626,7 +2673,7 @@ namespace xharness
 			using (var resource = await NotifyAndAcquireDesktopResourceAsync ()) {
 				var log = Logs.Create ($"build-{Platform}-{Timestamp}.txt", "Build log");
 
-				await RestoreNugetsAsync (log, resource);
+				await RestoreNugetsAsync (log, resource, useXIBuild: true);
 
 				using (var xbuild = new Process ()) {
 					xbuild.StartInfo.FileName = Harness.XIBuildPath;
